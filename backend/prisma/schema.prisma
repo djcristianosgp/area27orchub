@@ -1,0 +1,236 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Seed configuration
+model Seed {
+  id String @id @default(cuid())
+}
+
+// ============ USERS ============
+model User {
+  id        String     @id @default(cuid())
+  email     String     @unique
+  password  String
+  name      String
+  role      UserRole   @default(ADMIN)
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  USER
+  VIEWER
+}
+
+// ============ CLIENTS ============
+model Client {
+  id            String     @id @default(cuid())
+  name          String
+  email         String
+  phone         String
+  observations  String?
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  invoices      Invoice[]
+
+  @@map("clients")
+}
+
+// ============ CATEGORIES ============
+model Category {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  description String?
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  products    Product[]
+
+  @@map("categories")
+}
+
+// ============ BRANDS ============
+model Brand {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  description String?
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  products    Product[]
+
+  @@map("brands")
+}
+
+// ============ GROUPS ============
+model Group {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  description String?
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  products    Product[]
+
+  @@map("groups")
+}
+
+// ============ PRODUCTS ============
+model Product {
+  id          String     @id @default(cuid())
+  name        String
+  description String?
+  categoryId  String
+  brandId     String
+  groupId     String
+  image       String?
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  category    Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  brand       Brand      @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  group       Group      @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  variations  ProductVariation[]
+  invoiceItems InvoiceItem[]
+
+  @@map("products")
+}
+
+model ProductVariation {
+  id              String     @id @default(cuid())
+  name            String
+  price           Decimal    @db.Decimal(10, 2)
+  affiliateLink   String?
+  observation     String?
+  productId       String
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+
+  product         Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_variations")
+}
+
+// ============ SERVICES ============
+model Service {
+  id          String     @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  variations  ServiceVariation[]
+  invoiceItems InvoiceItem[]
+
+  @@map("services")
+}
+
+model ServiceVariation {
+  id          String     @id @default(cuid())
+  name        String
+  price       Decimal    @db.Decimal(10, 2)
+  observation String?
+  serviceId   String
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  service     Service    @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@map("service_variations")
+}
+
+// ============ INVOICES ============
+model Invoice {
+  id            String        @id @default(cuid())
+  clientId      String
+  status        InvoiceStatus @default(DRAFT)
+  totalAmount   Decimal       @db.Decimal(12, 2) @default(0)
+  publicUrl     String?       @unique
+  responseStatus String?       // APPROVED or REFUSED
+  responseDate  DateTime?
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  client        Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  items         InvoiceItem[]
+  groups        InvoiceGroup[]
+
+  @@map("invoices")
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  APPROVED
+  REFUSED
+}
+
+model InvoiceGroup {
+  id        String     @id @default(cuid())
+  name      String
+  type      GroupType  // PRODUCT or SERVICE
+  invoiceId String
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+
+  invoice   Invoice    @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  items     InvoiceItem[]
+
+  @@map("invoice_groups")
+}
+
+enum GroupType {
+  PRODUCT
+  SERVICE
+}
+
+model InvoiceItem {
+  id                  String     @id @default(cuid())
+  quantity            Int        @default(1)
+  unitPrice           Decimal    @db.Decimal(10, 2)
+  totalPrice          Decimal    @db.Decimal(12, 2)
+  invoiceId           String
+  invoiceGroupId      String
+  productId           String?
+  serviceId           String?
+  productVariationId  String?
+  serviceVariationId  String?
+  createdAt           DateTime   @default(now()) @map("created_at")
+  updatedAt           DateTime   @updatedAt @map("updated_at")
+
+  invoice             Invoice    @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  invoiceGroup        InvoiceGroup @relation(fields: [invoiceGroupId], references: [id], onDelete: Cascade)
+  product             Product?   @relation(fields: [productId], references: [id], onDelete: SetNull)
+  service             Service?   @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  
+  @@map("invoice_items")
+}
+
+// ============ COUPONS ============
+model Coupon {
+  id            String     @id @default(cuid())
+  title         String
+  description   String?
+  platform      String     // Amazon, Mercado Livre, AliExpress, etc
+  code          String     @unique
+  affiliateLink String
+  validUntil    DateTime
+  active        Boolean    @default(true)
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  @@map("coupons")
+}
