@@ -22,8 +22,11 @@ model User {
   password  String
   name      String
   role      UserRole   @default(ADMIN)
+  companyId String?    @map("company_id")
   createdAt DateTime   @default(now()) @map("created_at")
   updatedAt DateTime   @updatedAt @map("updated_at")
+
+  company   Company?   @relation(fields: [companyId], references: [id], onDelete: SetNull)
 
   @@map("users")
 }
@@ -42,6 +45,7 @@ model Client {
   nickname        String?         // Apelido/Nome Fantasia
   cpfCnpj         String?         @unique @map("cpf_cnpj")
   status          ClientStatus    @default(ACTIVE)
+  companyId       String?         @map("company_id")
   
   // Localização
   street          String?         @map("street")
@@ -63,6 +67,7 @@ model Client {
   updatedAt       DateTime        @updatedAt @map("updated_at")
 
   invoices        Invoice[]
+  company         Company?        @relation(fields: [companyId], references: [id], onDelete: SetNull)
 
   @@map("clients")
 }
@@ -297,4 +302,84 @@ model Coupon {
   updatedAt     DateTime   @updatedAt @map("updated_at")
 
   @@map("coupons")
+}
+
+// ============ COMPANY ============
+model Company {
+  id           String          @id @default(cuid())
+  name         String          // Razão Social (Obrigatório)
+  nickname     String?         // Nome Fantasia
+  cpfCnpj      String?         @unique @map("cpf_cnpj")
+  street       String?
+  number       String?
+  neighborhood String?
+  city         String?
+  zipCode      String?         @map("zip_code")
+  state        String?
+  observations String?
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+
+  emails       CompanyEmail[]
+  phones       CompanyPhone[]
+  socials      CompanySocial[]
+  pixKeys      CompanyPixKey[]
+
+  users        User[]
+  clients      Client[]
+
+  @@map("companies")
+}
+
+model CompanyEmail {
+  id         String   @id @default(cuid())
+  email      String
+  primary    Boolean  @default(false)
+  companyId  String   @map("company_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, email])
+  @@map("company_emails")
+}
+
+model CompanyPhone {
+  id         String   @id @default(cuid())
+  phone      String
+  hasWhatsapp Boolean @default(false)
+  primary    Boolean  @default(false)
+  companyId  String   @map("company_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, phone])
+  @@map("company_phones")
+}
+
+model CompanySocial {
+  id         String   @id @default(cuid())
+  platform   String
+  url        String
+  companyId  String   @map("company_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, platform])
+  @@map("company_socials")
+}
+
+model CompanyPixKey {
+  id         String   @id @default(cuid())
+  key        String
+  type       String?
+  companyId  String   @map("company_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, key])
+  @@map("company_pix_keys")
 }

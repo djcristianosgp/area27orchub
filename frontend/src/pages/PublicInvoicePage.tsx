@@ -93,7 +93,7 @@ export const PublicInvoicePage: React.FC = () => {
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2 flex items-center justify-center gap-3">
             <span>🌐</span>
-            <span>OrçHub</span>
+            <span>Budget Hub</span>
           </h1>
           <p className="text-gray-600">Sistema de Orçamentos Virtuais</p>
         </div>
@@ -274,7 +274,7 @@ export const PublicInvoicePage: React.FC = () => {
 
         {/* Footer */}
         <div className="text-center mt-8 text-gray-500 text-sm">
-          <p>Powered by <strong>OrçHub</strong> - Sistema de Orçamentos Virtuais</p>
+          <p>Powered by <strong>Budget Hub</strong> - Sistema de Orçamentos Virtuais</p>
         </div>
       </div>
     </div>

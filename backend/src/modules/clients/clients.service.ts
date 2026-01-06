@@ -6,7 +6,7 @@ import { CreateClientDto, UpdateClientDto } from './dtos/client.dto';
 export class ClientsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(createClientDto: CreateClientDto) {
+  async create(createClientDto: CreateClientDto, user?: any) {
     const {
       emails = [],
       phones = [],
@@ -18,6 +18,7 @@ export class ClientsService {
       data: {
         ...clientData,
         status: (clientData.status || 'ACTIVE') as any,
+        ...(user?.companyId ? { companyId: user.companyId } : {}),
         clientEmails: {
           create: emails,
         },

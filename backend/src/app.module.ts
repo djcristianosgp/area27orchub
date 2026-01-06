@@ -9,6 +9,7 @@ import { CouponsModule } from '@modules/coupons/coupons.module';
 import { CategoriesModule } from '@modules/categories/categories.module';
 import { BrandsModule } from '@modules/brands/brands.module';
 import { GroupsModule } from '@modules/groups/groups.module';
+import { CompaniesModule } from '@modules/companies/companies.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { GroupsModule } from '@modules/groups/groups.module';
     CategoriesModule,
     BrandsModule,
     GroupsModule,
+    CompaniesModule,
   ],
 })
 export class AppModule {}

@@ -13,6 +13,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
   const menuItems = [
     { label: 'Dashboard', path: '/admin', icon: '📊' },
+    { label: 'Empresa', path: '/admin/company', icon: '🏢' },
     { label: 'Clientes', path: '/admin/clients', icon: '👥' },
     { label: 'Produtos', path: '/admin/products', icon: '📦' },
     { label: 'Serviços', path: '/admin/services', icon: '🛠️' },
@@ -40,7 +41,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             </div>
             <div>
               <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                OrçHub
+                Budget Hub
               </h1>
               <p className="text-xs text-slate-400 font-medium">Sistema de Orçamentos</p>
             </div>

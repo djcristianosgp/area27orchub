@@ -238,6 +238,19 @@ class ApiClient {
   async deleteCoupon(id: string) {
     return this.client.delete(`/coupons/${id}`);
   }
+
+  // Company endpoints
+  async getMyCompany() {
+    return this.client.get('/companies/me');
+  }
+
+  async createCompany(data: any) {
+    return this.client.post('/companies', data);
+  }
+
+  async updateMyCompany(data: any) {
+    return this.client.put('/companies/me', data);
+  }
 }
 
 export default new ApiClient();

@@ -38,7 +38,7 @@ export const CouponsPublicPage: React.FC = () => {
         <nav className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link to="/" className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent flex items-center gap-2">
             <span>🌐</span>
-            <span>OrçHub</span>
+            <span>Budget Hub</span>
           </Link>
           <div className="flex gap-6">
             <Link 
@@ -184,7 +184,7 @@ export const CouponsPublicPage: React.FC = () => {
       {/* Footer */}
       <footer className="bg-white border-t border-gray-200 mt-20">
         <div className="max-w-7xl mx-auto px-6 py-8 text-center text-gray-600 text-sm">
-          <p>Powered by <strong className="text-blue-600">OrçHub</strong> - Sistema de Orçamentos Virtuais</p>
+          <p>Powered by <strong className="text-blue-600">Budget Hub</strong> - Sistema de Orçamentos Virtuais</p>
         </div>
       </footer>
     </div>

@@ -9,18 +9,21 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Req,
 } from '@nestjs/common';
 import { ClientsService } from './clients.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CreateClientDto, UpdateClientDto } from './dtos/client.dto';
 
 @Controller('clients')
+@UseGuards(JwtAuthGuard)
 export class ClientsController {
   constructor(private clientsService: ClientsService) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() createClientDto: CreateClientDto) {
-    return this.clientsService.create(createClientDto);
+  create(@Req() req: any, @Body() createClientDto: CreateClientDto) {
+    return this.clientsService.create(createClientDto, req.user);
   }
 
   @Get()

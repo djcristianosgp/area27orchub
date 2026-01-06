@@ -201,7 +201,7 @@ export const DashboardPage: React.FC = () => {
               </div>
               <div className="space-y-4 text-gray-600">
                 <p className="leading-relaxed text-base">
-                  <strong className="text-gray-800">OrçHub</strong> é um sistema completo de 
+                  <strong className="text-gray-800">Budget Hub</strong> é um sistema completo de 
                   gerenciamento de orçamentos virtuais com suporte a produtos, serviços e 
                   cupons de desconto.
                 </p>

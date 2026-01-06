@@ -14,6 +14,7 @@ import {
   CategoriesPage,
   BrandsPage,
   GroupsPage,
+  CompanyPage,
 } from '@pages/admin';
 
 export function App() {
@@ -97,6 +98,14 @@ export function App() {
           element={
             <ProtectedRoute>
               <GroupsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/company"
+          element={
+            <ProtectedRoute>
+              <CompanyPage />
             </ProtectedRoute>
           }
         />
