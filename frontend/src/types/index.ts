@@ -61,6 +61,25 @@ export interface Product {
   categoryId: string;
   brandId: string;
   groupId: string;
+  variations: ProductVariation[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Service types
+export interface ServiceVariation {
+  id: string;
+  name: string;
+  price: number;
+  observation?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Service {
+  id: string;
+  name: string;
+  description?: string;
   variations: ServiceVariation[];
   createdAt: Date;
   updatedAt: Date;
@@ -109,9 +128,14 @@ export interface Client {
 // Invoice types
 export enum InvoiceStatus {
   DRAFT = 'DRAFT',
-  SENT = 'SENT',
+  READY = 'READY',
+  EXPIRED = 'EXPIRED',
   APPROVED = 'APPROVED',
   REFUSED = 'REFUSED',
+  COMPLETED = 'COMPLETED',
+  INVOICED = 'INVOICED',
+  ABANDONED = 'ABANDONED',
+  DESISTED = 'DESISTED',
 }
 
 export enum GroupType {
@@ -124,10 +148,15 @@ export interface InvoiceItem {
   quantity: number;
   unitPrice: number;
   totalPrice: number;
+  customName?: string;
+  customDescription?: string;
+  customPrice?: number;
   productId?: string;
   serviceId?: string;
   productVariationId?: string;
   serviceVariationId?: string;
+  product?: Product;
+  service?: Service;
 }
 
 export interface InvoiceGroup {
@@ -137,15 +166,42 @@ export interface InvoiceGroup {
   items: InvoiceItem[];
 }
 
+export enum PaymentType {
+  CASH = 'CASH',
+  INSTALLMENTS = 'INSTALLMENTS',
+  DEBIT_CARD = 'DEBIT_CARD',
+  CREDIT_CARD = 'CREDIT_CARD',
+  PIX = 'PIX',
+  BOLETO = 'BOLETO',
+}
+
+export interface PaymentCondition {
+  id?: string;
+  type: PaymentType;
+  description?: string;
+  numberOfInstallments?: number;
+  interestRate?: number;
+}
+
 export interface Invoice {
   id: string;
+  code: string;
   clientId: string;
   status: InvoiceStatus;
   totalAmount: number;
+  subtotal: number;
+  discounts: number;
+  additions: number;
+  displacement: number;
+  origin?: string;
+  proposalValidDate?: string;
+  observations?: string;
   publicUrl: string;
-  responseStatus?: string;
-  responseDate?: Date;
+  clientResponseStatus?: string;
+  clientResponseReason?: string;
+  clientResponseDate?: Date;
   groups?: InvoiceGroup[];
+  paymentConditions?: PaymentCondition[];
   client?: Client;
   createdAt: Date;
   updatedAt: Date;

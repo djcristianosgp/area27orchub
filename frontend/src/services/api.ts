@@ -181,8 +181,14 @@ class ApiClient {
     return this.client.post('/invoices', data);
   }
 
-  async getInvoices(clientId?: string) {
-    return this.client.get('/invoices', { params: { clientId } });
+  async getInvoices(filters?: {
+    clientId?: string;
+    status?: string;
+    productId?: string;
+    serviceId?: string;
+    search?: string;
+  }) {
+    return this.client.get('/invoices', { params: filters });
   }
 
   async getInvoice(id: string) {
@@ -193,8 +199,14 @@ class ApiClient {
     return this.client.patch(`/invoices/${id}`, data);
   }
 
-  async cloneInvoice(id: string) {
-    return this.client.post(`/invoices/${id}/clone`);
+  async cloneInvoice(id: string, updatePrices: boolean = false) {
+    return this.client.post(`/invoices/${id}/clone`, null, {
+      params: { updatePrices },
+    });
+  }
+
+  async changeInvoiceStatus(id: string, status: string, reason?: string) {
+    return this.client.post(`/invoices/${id}/status`, { status, reason });
   }
 
   async deleteInvoice(id: string) {
@@ -210,8 +222,12 @@ class ApiClient {
     return this.client.post(`/invoices/public/${publicUrl}/approve`);
   }
 
-  async refuseInvoice(publicUrl: string) {
-    return this.client.post(`/invoices/public/${publicUrl}/refuse`);
+  async refuseInvoice(publicUrl: string, reason?: string) {
+    return this.client.post(`/invoices/public/${publicUrl}/refuse`, { reason });
+  }
+
+  async abandonInvoice(publicUrl: string, reason?: string) {
+    return this.client.post(`/invoices/public/${publicUrl}/abandon`, { reason });
   }
 
   // Coupons endpoints

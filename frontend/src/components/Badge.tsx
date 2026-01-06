@@ -1,6 +1,6 @@
 import React, { ReactNode } from 'react';
 
-type BadgeVariant = 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'info';
+type BadgeVariant = 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'info' | 'secondary';
 
 interface BadgeProps {
   children: ReactNode;
@@ -15,6 +15,7 @@ const variantClasses: Record<BadgeVariant, string> = {
   warning: 'bg-yellow-100 text-yellow-700 border-yellow-200',
   danger: 'bg-red-100 text-red-700 border-red-200',
   info: 'bg-cyan-100 text-cyan-700 border-cyan-200',
+  secondary: 'bg-gray-200 text-gray-800 border-gray-300',
 };
 
 export const Badge: React.FC<BadgeProps> = ({ 

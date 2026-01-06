@@ -4,22 +4,23 @@
   "description": "Frontend for OrçHub - Virtual Invoices, Coupons, and Affiliate Products",
   "private": true,
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
+    "axios": "^1.6.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.20.0",
-    "zustand": "^4.4.1",
-    "axios": "^1.6.2",
-    "tailwindcss": "^3.3.6"
+    "tailwindcss": "^3.3.6",
+    "zustand": "^4.4.1"
   },
   "devDependencies": {
+    "@types/node": "^20.10.6",
     "@types/react": "^18.2.37",
     "@types/react-dom": "^18.2.15",
-    "@types/node": "^20.10.6",
-    "typescript": "^5.3.3",
-    "vite": "^5.0.0",
     "@vitejs/plugin-react": "^4.2.0",
     "autoprefixer": "^10.4.16",
-    "postcss": "^8.4.32"
+    "postcss": "^8.4.32",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.0"
   },
   "scripts": {
     "dev": "vite",

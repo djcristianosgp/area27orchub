@@ -9,7 +9,7 @@ import {
   ClientsPage,
   ProductsPage,
   ServicesPage,
-  InvoicesPage,
+  InvoicesListPage,
   CouponsPage,
   CategoriesPage,
   BrandsPage,
@@ -65,7 +65,7 @@ export function App() {
           path="/admin/invoices"
           element={
             <ProtectedRoute>
-              <InvoicesPage />
+              <InvoicesListPage />
             </ProtectedRoute>
           }
         />

@@ -83,7 +83,7 @@ export class InvoicesService {
         },
         paymentConditions: createInvoiceDto.paymentConditions ? {
           create: createInvoiceDto.paymentConditions.map((pc) => ({
-            type: pc.type,
+            type: pc.type as any,
             description: pc.description,
             numberOfInstallments: pc.numberOfInstallments,
             interestRate: pc.interestRate || 0,
@@ -104,7 +104,7 @@ export class InvoicesService {
     await this.prisma.invoiceItem.updateMany({
       where: {
         invoiceGroupId: {
-          in: invoice.groups.map(g => g.id),
+          in: invoice.groups.map((g: any) => g.id),
         },
       },
       data: {

@@ -9,3 +9,5 @@ export { Badge } from './Badge';
 export { PageHeader } from './PageHeader';
 export { StatCard } from './StatCard';
 export { EmptyState } from './EmptyState';
+export { InvoiceStatusBadge } from './InvoiceStatusBadge';
+export { InvoiceActionsMenu } from './InvoiceActionsMenu';

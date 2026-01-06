@@ -1,1 +1,2 @@
-1 - Refatorar o visual da 
+1 - Refatorar o visual da CompanyPage.tsx
+2 - 
