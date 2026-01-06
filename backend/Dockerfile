@@ -9,6 +9,9 @@ RUN npm ci
 
 COPY . .
 
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
 RUN npm run build
 
 EXPOSE 3000

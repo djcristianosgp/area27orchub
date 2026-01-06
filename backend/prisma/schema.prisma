@@ -14,7 +14,6 @@ datasource db {
 model Seed {
   id String @id @default(cuid())
 }
-
 // ============ USERS ============
 model User {
   id        String     @id @default(cuid())
@@ -45,7 +44,7 @@ model Client {
   nickname        String?         // Apelido/Nome Fantasia
   cpfCnpj         String?         @unique @map("cpf_cnpj")
   status          ClientStatus    @default(ACTIVE)
-  companyId       String?         @map("company_id")
+  companyId       String?         @map("companyId")
   
   // Localização
   street          String?         @map("street")
@@ -95,7 +94,7 @@ model ClientPhone {
   id          String   @id @default(cuid())
   phone       String
   clientId    String   @map("client_id")
-  hasWhatsapp Boolean  @default(false)
+  hasWhatsapp Boolean  @default(false) @map("has_whatsapp")
   primary     Boolean  @default(false)
   createdAt   DateTime @default(now()) @map("created_at")
 
@@ -225,26 +224,14 @@ model ServiceVariation {
 model Invoice {
   id                  String          @id @default(cuid())
   code                String          @unique          // Código único do orçamento
-  clientId            String          @map("client_id")
+  clientId            String          @map("clientId")
   status              InvoiceStatus   @default(DRAFT)
   totalAmount         Decimal         @db.Decimal(12, 2) @default(0)
-  subtotal            Decimal         @db.Decimal(12, 2) @default(0)
-  discounts           Decimal         @db.Decimal(12, 2) @default(0)
-  additions           Decimal         @db.Decimal(12, 2) @default(0)
-  displacement        Decimal         @db.Decimal(12, 2) @default(0)  // Deslocamento
-  
-  // Cabeçalho do orçamento
-  origin              String?         // Origem do orçamento
-  proposalValidDate   DateTime?       @map("proposal_valid_date")  // Data de validade da proposta
-  observations        String?         
-  
   // Página pública
-  publicUrl           String?         @unique @map("public_url")
-  
+  publicUrl           String?         @unique @map("publicUrl")
   // Resposta do cliente
-  clientResponseStatus String?        @map("client_response_status") // APPROVED, REFUSED, ABANDONED
-  clientResponseReason String?        @map("client_response_reason") // Motivo da recusa/abandono
-  clientResponseDate   DateTime?      @map("client_response_date")
+  clientResponseStatus String?        @map("responseStatus")
+  clientResponseDate   DateTime?      @map("responseDate")
   
   createdAt           DateTime        @default(now()) @map("created_at")
   updatedAt           DateTime        @updatedAt @map("updated_at")
@@ -299,12 +286,12 @@ model InvoiceItem {
   customDescription   String?    // Descrição customizada
   customPrice         Decimal?   @db.Decimal(10, 2) // Preço customizado
   
-  invoiceId           String     @map("invoice_id")
-  invoiceGroupId      String     @map("invoice_group_id")
-  productId           String?    @map("product_id")
-  serviceId           String?    @map("service_id")
-  productVariationId  String?    @map("product_variation_id")
-  serviceVariationId  String?    @map("service_variation_id")
+  invoiceId           String     @map("invoiceId")
+  invoiceGroupId      String     @map("invoiceGroupId")
+  productId           String?    @map("productId")
+  serviceId           String?    @map("serviceId")
+  productVariationId  String?    @map("productVariationId")
+  serviceVariationId  String?    @map("serviceVariationId")
   createdAt           DateTime   @default(now()) @map("created_at")
   updatedAt           DateTime   @updatedAt @map("updated_at")
 
@@ -388,8 +375,9 @@ model CompanyEmail {
   id         String   @id @default(cuid())
   email      String
   primary    Boolean  @default(false)
-  companyId  String   @map("company_id")
+  companyId  String   @map("companyId")
   createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
   company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
@@ -402,8 +390,9 @@ model CompanyPhone {
   phone      String
   hasWhatsapp Boolean @default(false)
   primary    Boolean  @default(false)
-  companyId  String   @map("company_id")
+  companyId  String   @map("companyId")
   createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
   company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
@@ -415,8 +404,9 @@ model CompanySocial {
   id         String   @id @default(cuid())
   platform   String
   url        String
-  companyId  String   @map("company_id")
+  companyId  String   @map("companyId")
   createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
   company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
@@ -428,8 +418,9 @@ model CompanyPixKey {
   id         String   @id @default(cuid())
   key        String
   type       String?
-  companyId  String   @map("company_id")
+  companyId  String   @map("companyId")
   createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
   company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 

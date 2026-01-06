@@ -6,7 +6,7 @@ compartilhamento de CUPONS DE DESCONTO e PRODUTOS COM LINKS DE AFILIADOS.
 STACK OBRIGATÓRIA
 - Frontend: React + TypeScript
 - Backend: Node.js + Express ou NestJS
-- Banco de dados: PostgreSQL
+- Banco de dados: PostgreSQL com a porta 5463 
 - ORM: Prisma
 - Estilo: UI moderna (estilo marketplace)
 - Autenticação: JWT

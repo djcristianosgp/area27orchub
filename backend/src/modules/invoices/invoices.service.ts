@@ -52,65 +52,41 @@ export class InvoicesService {
         code,
         clientId: createInvoiceDto.clientId,
         publicUrl,
-        origin: createInvoiceDto.origin,
-        proposalValidDate: createInvoiceDto.proposalValidDate ? new Date(createInvoiceDto.proposalValidDate) : null,
-        observations: createInvoiceDto.observations,
-        discounts: createInvoiceDto.discounts || 0,
-        additions: createInvoiceDto.additions || 0,
-        displacement: createInvoiceDto.displacement || 0,
-        groups: {
-          create: createInvoiceDto.groups.map((group) => ({
-            name: group.name,
-            type: group.type,
-            items: {
-              create: group.items.map((item) => ({
-                quantity: item.quantity,
-                unitPrice: item.unitPrice,
-                totalPrice: (item.customPrice || item.unitPrice) * item.quantity,
-                customName: item.customName,
-                customDescription: item.customDescription,
-                customPrice: item.customPrice,
-                productId: item.productId,
-                serviceId: item.serviceId,
-                productVariationId: item.productVariationId,
-                serviceVariationId: item.serviceVariationId,
-                invoice: {
-                  connect: { id: undefined }, // Will be connected after creation
-                },
-              })),
-            },
-          })) as any,
-        },
-        paymentConditions: createInvoiceDto.paymentConditions ? {
-          create: createInvoiceDto.paymentConditions.map((pc) => ({
-            type: pc.type as any,
-            description: pc.description,
-            numberOfInstallments: pc.numberOfInstallments,
-            interestRate: pc.interestRate || 0,
-          })),
-        } : undefined,
-      },
-      include: {
-        groups: {
-          include: {
-            items: true,
-          },
-        },
-        paymentConditions: true,
       },
     });
 
-    // Fix invoiceId in items (workaround for nested create)
-    await this.prisma.invoiceItem.updateMany({
-      where: {
-        invoiceGroupId: {
-          in: invoice.groups.map((g: any) => g.id),
+    // Create groups and items sequentially to satisfy required relations
+    for (const group of createInvoiceDto.groups) {
+      const createdGroup = await this.prisma.invoiceGroup.create({
+        data: {
+          name: group.name,
+          type: group.type as any,
+          invoiceId: invoice.id,
         },
-      },
-      data: {
-        invoiceId: invoice.id,
-      },
-    });
+      });
+
+      if (group.items && group.items.length > 0) {
+        await this.prisma.invoiceItem.createMany({
+          data: group.items.map((item) => ({
+            invoiceId: invoice.id,
+            invoiceGroupId: createdGroup.id,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice as any,
+            totalPrice: ((item.customPrice ?? item.unitPrice) as any) * item.quantity,
+            customName: item.customName,
+            customDescription: item.customDescription,
+            customPrice: item.customPrice as any,
+            productId: item.productId,
+            serviceId: item.serviceId,
+            productVariationId: item.productVariationId,
+            serviceVariationId: item.serviceVariationId,
+          })),
+        });
+      }
+    }
+
+    // Fix invoiceId in items (workaround for nested create)
+    // Items already created with invoiceId; no post-fix needed
 
     // Calculate total
     await this.updateTotal(invoice.id);
@@ -324,9 +300,8 @@ export class InvoicesService {
     }
 
     const data: any = { status };
-
-    if (['ABANDONED', 'DESISTED', 'REFUSED'].includes(status) && reason) {
-      data.clientResponseReason = reason;
+    if (['ABANDONED', 'DESISTED', 'REFUSED'].includes(status)) {
+      data.clientResponseStatus = status;
       data.clientResponseDate = new Date();
     }
 
@@ -357,7 +332,6 @@ export class InvoicesService {
       data: {
         status: 'REFUSED',
         clientResponseStatus: 'REFUSED',
-        clientResponseReason: reason,
         clientResponseDate: new Date(),
       },
     });
@@ -371,7 +345,6 @@ export class InvoicesService {
       data: {
         status: 'ABANDONED',
         clientResponseStatus: 'ABANDONED',
-        clientResponseReason: reason,
         clientResponseDate: new Date(),
       },
     });
@@ -395,19 +368,11 @@ export class InvoicesService {
 
     if (!invoice) return;
 
-    const subtotal = invoice.items.reduce(
-      (sum, item) => sum + Number(item.totalPrice),
-      0,
-    );
-
-    const total = subtotal - Number(invoice.discounts) + Number(invoice.additions) + Number(invoice.displacement);
+    const total = invoice.items.reduce((sum, item) => sum + Number(item.totalPrice), 0);
 
     return this.prisma.invoice.update({
       where: { id: invoiceId },
-      data: { 
-        subtotal,
-        totalAmount: total,
-      },
+      data: { totalAmount: total },
     });
   }
 }

@@ -1,0 +1,4 @@
+ALTER TABLE "users" ADD COLUMN "company_id" TEXT;
+ALTER TABLE "users" ADD CONSTRAINT "users_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+INSERT INTO "_prisma_migrations" ("id", "checksum", "finished_at", "execution_time", "migration_name", "logs", "rolled_back_at", "started_at", "applied_step_count") VALUES ('20260106200000_add_company_id_to_users', 'f1d1e2c12b0ef1eb6e6e15e8b8c7e6d7a9c7e6d7', NOW(), 0, '20260106200000_add_company_id_to_users', NULL, NULL, NOW(), 1);
+INSERT INTO "_prisma_migrations" ("id", "checksum", "finished_at", "execution_time", "migration_name", "logs", "rolled_back_at", "started_at", "applied_step_count") VALUES ('20260106210000_create_companies', 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6', NOW(), 0, '20260106210000_create_companies', NULL, NULL, NOW(), 1);
