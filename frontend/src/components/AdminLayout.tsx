@@ -83,7 +83,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           <div className="flex items-center justify-between text-xs text-slate-400">
             <span className="flex items-center gap-1">
               <span>✨</span>
-              <span>v1.0.2</span>
+              <span>v1.0.3</span>
             </span>
             <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded-md font-medium">
               Online

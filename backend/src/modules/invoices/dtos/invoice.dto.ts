@@ -9,9 +9,14 @@ import {
 
 export enum InvoiceStatusEnum {
   DRAFT = 'DRAFT',
-  SENT = 'SENT',
+  READY = 'READY',
+  EXPIRED = 'EXPIRED',
   APPROVED = 'APPROVED',
   REFUSED = 'REFUSED',
+  COMPLETED = 'COMPLETED',
+  INVOICED = 'INVOICED',
+  ABANDONED = 'ABANDONED',
+  DESISTED = 'DESISTED',
 }
 
 export enum GroupTypeEnum {
@@ -27,6 +32,18 @@ export class CreateInvoiceItemDto {
   @IsNumber()
   @IsNotEmpty()
   unitPrice: number;
+
+  @IsString()
+  @IsOptional()
+  customName?: string;
+
+  @IsString()
+  @IsOptional()
+  customDescription?: string;
+
+  @IsNumber()
+  @IsOptional()
+  customPrice?: number;
 
   @IsString()
   @IsOptional()
@@ -59,14 +76,60 @@ export class CreateInvoiceGroupDto {
   items: CreateInvoiceItemDto[];
 }
 
+export class CreatePaymentConditionDto {
+  @IsString()
+  @IsNotEmpty()
+  type: string; // CASH, INSTALLMENTS, DEBIT_CARD, CREDIT_CARD, PIX, BOLETO
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsNumber()
+  @IsOptional()
+  numberOfInstallments?: number;
+
+  @IsNumber()
+  @IsOptional()
+  interestRate?: number;
+}
+
 export class CreateInvoiceDto {
   @IsString()
   @IsNotEmpty()
   clientId: string;
 
+  @IsString()
+  @IsOptional()
+  origin?: string;
+
+  @IsString()
+  @IsOptional()
+  proposalValidDate?: string;
+
+  @IsString()
+  @IsOptional()
+  observations?: string;
+
+  @IsNumber()
+  @IsOptional()
+  discounts?: number;
+
+  @IsNumber()
+  @IsOptional()
+  additions?: number;
+
+  @IsNumber()
+  @IsOptional()
+  displacement?: number;
+
   @IsArray()
   @IsNotEmpty()
   groups: CreateInvoiceGroupDto[];
+
+  @IsArray()
+  @IsOptional()
+  paymentConditions?: CreatePaymentConditionDto[];
 }
 
 export class UpdateInvoiceDto {

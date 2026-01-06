@@ -24,8 +24,20 @@ export class InvoicesController {
   }
 
   @Get()
-  findAll(@Query('clientId') clientId?: string) {
-    return this.invoicesService.findAll(clientId);
+  findAll(
+    @Query('clientId') clientId?: string,
+    @Query('status') status?: string,
+    @Query('productId') productId?: string,
+    @Query('serviceId') serviceId?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.invoicesService.findAll({
+      clientId,
+      status,
+      productId,
+      serviceId,
+      search,
+    });
   }
 
   @Get(':id')
@@ -43,8 +55,20 @@ export class InvoicesController {
 
   @Post(':id/clone')
   @HttpCode(HttpStatus.CREATED)
-  clone(@Param('id') id: string) {
-    return this.invoicesService.clone(id);
+  clone(
+    @Param('id') id: string,
+    @Query('updatePrices') updatePrices?: string,
+  ) {
+    return this.invoicesService.clone(id, updatePrices === 'true');
+  }
+
+  @Post(':id/status')
+  @HttpCode(HttpStatus.OK)
+  changeStatus(
+    @Param('id') id: string,
+    @Body() body: { status: string; reason?: string },
+  ) {
+    return this.invoicesService.changeStatus(id, body.status, body.reason);
   }
 
   @Delete(':id')
@@ -67,7 +91,19 @@ export class InvoicesController {
 
   @Post('public/:publicUrl/refuse')
   @HttpCode(HttpStatus.OK)
-  refuseInvoice(@Param('publicUrl') publicUrl: string) {
-    return this.invoicesService.refuseInvoice(publicUrl);
+  refuseInvoice(
+    @Param('publicUrl') publicUrl: string,
+    @Body() body?: { reason?: string },
+  ) {
+    return this.invoicesService.refuseInvoice(publicUrl, body?.reason);
+  }
+
+  @Post('public/:publicUrl/abandon')
+  @HttpCode(HttpStatus.OK)
+  abandonInvoice(
+    @Param('publicUrl') publicUrl: string,
+    @Body() body?: { reason?: string },
+  ) {
+    return this.invoicesService.abandonInvoice(publicUrl, body?.reason);
   }
 }
