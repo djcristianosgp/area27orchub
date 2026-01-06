@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AdminLayout, Table, Modal, FormField, TextAreaField, Button } from '@components/index';
+import { AdminLayout, Table, Modal, FormField, TextAreaField, Button, PageHeader, Card, EmptyState } from '@components/index';
 import api from '@services/api';
 import { Client } from '@types/index';
 
@@ -112,29 +112,88 @@ export const ClientsPage: React.FC = () => {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h3 className="text-2xl font-bold text-gray-800">Gerenciar Clientes</h3>
-            <p className="text-gray-600">Total: {clients.length} cliente(s)</p>
-          </div>
-          <Button icon="+" onClick={handleNew} size="lg">
-            Novo Cliente
-          </Button>
-        </div>
-
-        <Table
-          columns={columns}
-          data={clients}
-          loading={loading}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
+        <PageHeader
+          emoji="👥"
+          title="Gerenciar Clientes"
+          description={`${clients.length} cliente(s) cadastrado(s)`}
+          actions={
+            <Button icon="+" onClick={handleNew} size="lg">
+              Novo Cliente
+            </Button>
+          }
         />
+
+        <Card>
+          {loading ? (
+            <div className="flex justify-center items-center py-16">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
+                <p className="text-gray-600 font-medium">Carregando clientes...</p>
+              </div>
+            </div>
+          ) : clients.length === 0 ? (
+            <EmptyState
+              emoji="👥"
+              title="Nenhum cliente encontrado"
+              description="Comece cadastrando seu primeiro cliente"
+              action={
+                <Button icon="+" onClick={handleNew}>
+                  Cadastrar Primeiro Cliente
+                </Button>
+              }
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left text-gray-700">
+                <thead className="bg-gray-50 border-b-2 border-gray-200">
+                  <tr>
+                    {columns.map((col) => (
+                      <th key={col.key} className="px-6 py-4 font-semibold text-gray-800 text-sm uppercase tracking-wide">
+                        {col.label}
+                      </th>
+                    ))}
+                    <th className="px-6 py-4 font-semibold text-gray-800 text-sm uppercase tracking-wide">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {clients.map((client) => (
+                    <tr key={client.id} className="hover:bg-gray-50 transition">
+                      {columns.map((col) => (
+                        <td key={col.key} className="px-6 py-4">
+                          {col.render
+                            ? col.render(client[col.key as keyof Client], client)
+                            : (client[col.key as keyof Client] as any)?.toString() || '-'}
+                        </td>
+                      ))}
+                      <td className="px-6 py-4">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEdit(client)}
+                            className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-md text-xs font-medium transition"
+                          >
+                            ✏️ Editar
+                          </button>
+                          <button
+                            onClick={() => handleDelete(client)}
+                            className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-md text-xs font-medium transition"
+                          >
+                            🗑️ Deletar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
       </div>
 
       {/* Modal de Criação/Edição */}
       <Modal
         isOpen={modalOpen}
-        title={editingClient ? 'Editar Cliente' : 'Novo Cliente'}
+        title={editingClient ? '✏️ Editar Cliente' : '➕ Novo Cliente'}
         onClose={() => setModalOpen(false)}
         actions={[
           {
@@ -143,7 +202,7 @@ export const ClientsPage: React.FC = () => {
             variant: 'secondary',
           },
           {
-            label: editingClient ? 'Atualizar' : 'Criar',
+            label: editingClient ? 'Atualizar Cliente' : 'Criar Cliente',
             onClick: handleSave,
             variant: 'primary',
             loading: submitLoading,
@@ -151,8 +210,9 @@ export const ClientsPage: React.FC = () => {
         ]}
       >
         {errors.submit && (
-          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
-            {errors.submit}
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg flex items-start gap-2">
+            <span>⚠️</span>
+            <span>{errors.submit}</span>
           </div>
         )}
         <FormField

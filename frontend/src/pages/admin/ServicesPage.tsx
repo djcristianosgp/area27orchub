@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AdminLayout, Table, Modal, FormField, TextAreaField, Button } from '@components/index';
+import { AdminLayout, Modal, FormField, TextAreaField, Button, PageHeader, Card, EmptyState } from '@components/index';
 import api from '@services/api';
 import { Service, ServiceVariation } from '@types/index';
 
@@ -177,84 +177,182 @@ export const ServicesPage: React.FC = () => {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h3 className="text-2xl font-bold text-gray-800">Gerenciar Serviços</h3>
-            <p className="text-gray-600">Total: {services.length} serviço(s)</p>
-          </div>
-          <Button icon="+" onClick={handleNewService} size="lg">
-            Novo Serviço
-          </Button>
-        </div>
-
-        <Table
-          columns={columns}
-          data={services}
-          loading={loading}
-          onEdit={handleEditService}
-          onDelete={handleDeleteService}
+        <PageHeader
+          emoji="🛠️"
+          title="Gerenciar Serviços"
+          description={`${services.length} serviço(s) cadastrado(s)`}
+          actions={
+            <Button icon="+" onClick={handleNewService} size="lg">
+              Novo Serviço
+            </Button>
+          }
         />
 
+        <Card>
+          {loading ? (
+            <div className="flex justify-center items-center py-16">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
+                <p className="text-gray-600 font-medium">Carregando serviços...</p>
+              </div>
+            </div>
+          ) : services.length === 0 ? (
+            <EmptyState
+              emoji="🛠️"
+              title="Nenhum serviço encontrado"
+              description="Comece cadastrando seu primeiro serviço"
+              action={
+                <Button icon="+" onClick={handleNewService}>
+                  Cadastrar Primeiro Serviço
+                </Button>
+              }
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left text-gray-700">
+                <thead className="bg-gray-50 border-b-2 border-gray-200">
+                  <tr>
+                    {columns.map((col) => (
+                      <th key={col.key} className="px-6 py-4 font-semibold text-gray-800 text-sm uppercase tracking-wide">
+                        {col.label}
+                      </th>
+                    ))}
+                    <th className="px-6 py-4 font-semibold text-gray-800 text-sm uppercase tracking-wide">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {services.map((service) => (
+                    <tr key={service.id} className="hover:bg-gray-50 transition">
+                      {columns.map((col) => (
+                        <td key={col.key} className="px-6 py-4">
+                          {col.render
+                            ? col.render(service[col.key as keyof Service])
+                            : (service[col.key as keyof Service] as any)?.toString() || '-'}
+                        </td>
+                      ))}
+                      <td className="px-6 py-4">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEditService(service)}
+                            className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-md text-xs font-medium transition"
+                          >
+                            ✏️ Editar
+                          </button>
+                          <button
+                            onClick={() => handleDeleteService(service)}
+                            className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-md text-xs font-medium transition"
+                          >
+                            🗑️ Deletar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+
         {/* Expandir variações */}
-        <div className="mt-8">
-          <h4 className="text-lg font-bold text-gray-800 mb-4">Variações dos Serviços</h4>
-          <div className="space-y-4">
+        {services.length > 0 && (
+          <div className="mt-8">
+            <div className="flex items-center gap-3 mb-6">
+              <span className="text-2xl">📝</span>
+              <h4 className="text-xl font-bold text-gray-800">Variações dos Serviços</h4>
+            </div>
+            <div className="space-y-4">
             {services.map((service) => (
-              <div key={service.id} className="bg-white p-4 rounded-lg shadow">
-                <div className="flex justify-between items-center mb-3">
-                  <h5 className="font-semibold text-gray-700">{service.name}</h5>
-                  <Button
-                    icon="+"
-                    size="sm"
-                    onClick={() => handleNewVariation(service)}
-                  >
-                    Variação
-                  </Button>
-                </div>
-                <div className="space-y-2">
-                  {service.variations?.map((variation) => (
-                    <div
-                      key={variation.id}
-                      className="flex justify-between items-center bg-gray-50 p-3 rounded"
-                    >
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-700">{variation.name}</p>
-                        <p className="text-sm text-gray-500">R$ {variation.price.toFixed(2)}</p>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => handleEditVariation(service, variation)}
-                        >
-                          Editar
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="danger"
-                          onClick={() => handleDeleteVariation(service, variation)}
-                        >
-                          Deletar
-                        </Button>
+              <Card key={service.id} hover>
+                <div className="p-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">🛠️</span>
+                      <div>
+                        <h5 className="font-bold text-gray-800 text-lg">{service.name}</h5>
+                        <p className="text-sm text-gray-500">
+                          {service.variations?.length || 0} variação(ões)
+                        </p>
                       </div>
                     </div>
-                  ))}
+                    <Button
+                      icon="+"
+                      size="sm"
+                      onClick={() => handleNewVariation(service)}
+                    >
+                      Nova Variação
+                    </Button>
+                  </div>
+
+                  {service.variations && service.variations.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-slate-50 border-y border-slate-200">
+                          <tr>
+                            <th className="px-4 py-3 text-left font-semibold text-slate-700 text-xs uppercase tracking-wide">Nome</th>
+                            <th className="px-4 py-3 text-left font-semibold text-slate-700 text-xs uppercase tracking-wide">Preço</th>
+                            <th className="px-4 py-3 text-left font-semibold text-slate-700 text-xs uppercase tracking-wide">Observação</th>
+                            <th className="px-4 py-3 text-left font-semibold text-slate-700 text-xs uppercase tracking-wide">Ações</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {service.variations.map((variation) => (
+                            <tr key={variation.id} className="hover:bg-slate-50 transition">
+                              <td className="px-4 py-3 font-medium text-gray-900">{variation.name}</td>
+                              <td className="px-4 py-3 text-gray-700">
+                                <span className="font-semibold text-green-700">R$ {variation.price.toFixed(2)}</span>
+                              </td>
+                              <td className="px-4 py-3 text-gray-600">{variation.observation || '-'}</td>
+                              <td className="px-4 py-3">
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => handleEditVariation(service, variation)}
+                                    className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded text-xs font-medium transition"
+                                  >
+                                    ✏️
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteVariation(service, variation)}
+                                    className="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-700 rounded text-xs font-medium transition"
+                                  >
+                                    🗑️
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="py-8 text-center">
+                      <p className="text-gray-500 text-sm mb-3">Nenhuma variação cadastrada</p>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => handleNewVariation(service)}
+                      >
+                        Adicionar Primeira Variação
+                      </Button>
+                    </div>
+                  )}
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         </div>
+        )}
       </div>
 
       {/* Modal de Serviço */}
       <Modal
         isOpen={modalOpen}
-        title={editingService ? 'Editar Serviço' : 'Novo Serviço'}
+        title={editingService ? '✏️ Editar Serviço' : '➕ Novo Serviço'}
         onClose={() => setModalOpen(false)}
         actions={[
           { label: 'Cancelar', onClick: () => setModalOpen(false), variant: 'secondary' },
           {
-            label: editingService ? 'Atualizar' : 'Criar',
+            label: editingService ? 'Atualizar Serviço' : 'Criar Serviço',
             onClick: handleSaveService,
             variant: 'primary',
             loading: submitLoading,
@@ -262,7 +360,10 @@ export const ServicesPage: React.FC = () => {
         ]}
       >
         {errors.submit && (
-          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">{errors.submit}</div>
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg flex items-start gap-2">
+            <span>⚠️</span>
+            <span>{errors.submit}</span>
+          </div>
         )}
         <FormField
           label="Nome"

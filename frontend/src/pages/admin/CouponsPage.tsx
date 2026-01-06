@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AdminLayout, Table, Modal, FormField, Button } from '@components/index';
+import { AdminLayout, Modal, FormField, SelectField, Button, PageHeader, Card, EmptyState } from '@components/index';
 import api from '@services/api';
 import { Coupon } from '@types/index';
 
@@ -143,34 +143,91 @@ export const CouponsPage: React.FC = () => {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h3 className="text-2xl font-bold text-gray-800">Gerenciar Cupons</h3>
-            <p className="text-gray-600">Total: {coupons.length} cupom(ns)</p>
-          </div>
-          <Button icon="+" onClick={handleNew} size="lg">
-            Novo Cupom
-          </Button>
-        </div>
-
-        <Table
-          columns={columns}
-          data={coupons}
-          loading={loading}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
+        <PageHeader
+          emoji="🎟️"
+          title="Gerenciar Cupons"
+          description={`${coupons.length} cupom(ns) cadastrado(s)`}
+          actions={
+            <Button icon="+" onClick={handleNew} size="lg">
+              Novo Cupom
+            </Button>
+          }
         />
+
+        <Card>
+          {loading ? (
+            <div className="flex justify-center items-center py-16">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
+                <p className="text-gray-600 font-medium">Carregando cupons...</p>
+              </div>
+            </div>
+          ) : coupons.length === 0 ? (
+            <EmptyState
+              emoji="🎟️"
+              title="Nenhum cupom encontrado"
+              description="Comece criando seu primeiro cupom de desconto"
+              action={
+                <Button icon="+" onClick={handleNew}>
+                  Criar Primeiro Cupom
+                </Button>
+              }
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left text-gray-700">
+                <thead className="bg-gray-50 border-b-2 border-gray-200">
+                  <tr>
+                    {columns.map((col) => (
+                      <th key={col.key} className="px-6 py-4 font-semibold text-gray-800 text-sm uppercase tracking-wide">
+                        {col.label}
+                      </th>
+                    ))}
+                    <th className="px-6 py-4 font-semibold text-gray-800 text-sm uppercase tracking-wide">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {coupons.map((coupon) => (
+                    <tr key={coupon.id} className="hover:bg-gray-50 transition">
+                      {columns.map((col) => (
+                        <td key={col.key} className="px-6 py-4">
+                          {col.render ? col.render(coupon[col.key as keyof typeof coupon]) : coupon[col.key as keyof typeof coupon]?.toString() || '-'}
+                        </td>
+                      ))}
+                      <td className="px-6 py-4">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEdit(coupon)}
+                            className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-md text-xs font-medium transition"
+                          >
+                            ✏️ Editar
+                          </button>
+                          <button
+                            onClick={() => handleDelete(coupon)}
+                            className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-md text-xs font-medium transition"
+                          >
+                            🗑️ Deletar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
       </div>
 
       {/* Modal de Criação/Edição */}
       <Modal
         isOpen={modalOpen}
-        title={editingCoupon ? 'Editar Cupom' : 'Novo Cupom'}
+        title={editingCoupon ? '✏️ Editar Cupom' : '➕ Novo Cupom'}
         onClose={() => setModalOpen(false)}
         actions={[
           { label: 'Cancelar', onClick: () => setModalOpen(false), variant: 'secondary' },
           {
-            label: editingCoupon ? 'Atualizar' : 'Criar',
+            label: editingCoupon ? 'Atualizar Cupom' : 'Criar Cupom',
             onClick: handleSave,
             variant: 'primary',
             loading: submitLoading,
@@ -178,7 +235,10 @@ export const CouponsPage: React.FC = () => {
         ]}
       >
         {errors.submit && (
-          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">{errors.submit}</div>
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg flex items-start gap-2">
+            <span>⚠️</span>
+            <span>{errors.submit}</span>
+          </div>
         )}
         <FormField
           label="Título"
@@ -196,22 +256,14 @@ export const CouponsPage: React.FC = () => {
           error={errors.code}
           required
         />
-        <select
-          className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition mb-4 ${
-            errors.platform ? 'border-red-500 focus:ring-red-500' : 'border-gray-300'
-          }`}
+        <SelectField
+          label="Plataforma"
+          options={PLATFORMS}
           value={formData.platform}
           onChange={(e) => setFormData({ ...formData, platform: e.target.value })}
+          error={errors.platform}
           required
-        >
-          <option value="">Selecione a plataforma</option>
-          {PLATFORMS.map((p) => (
-            <option key={p.value} value={p.value}>
-              {p.label}
-            </option>
-          ))}
-        </select>
-        {errors.platform && <p className="mb-4 text-sm text-red-500">{errors.platform}</p>}
+        />
 
         <FormField
           label="Descrição"
@@ -232,15 +284,19 @@ export const CouponsPage: React.FC = () => {
           value={formData.validUntil}
           onChange={(e) => setFormData({ ...formData, validUntil: e.target.value })}
         />
-        <div className="mb-4">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={formData.active}
-              onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
-              className="w-4 h-4 rounded"
-            />
-            <span className="text-sm font-medium text-gray-700">Cupom ativo</span>
+        <div className="mb-5">
+          <label className="flex items-center gap-3 cursor-pointer group">
+            <div className="relative">
+              <input
+                type="checkbox"
+                checked={formData.active}
+                onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
+                className="w-5 h-5 rounded border-2 border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-500 transition cursor-pointer"
+              />
+            </div>
+            <span className="text-sm font-semibold text-slate-700 group-hover:text-slate-900 transition">
+              {formData.active ? '✅ Cupom ativo' : '⚪ Cupom inativo'}
+            </span>
           </label>
         </div>
       </Modal>
