@@ -36,17 +36,81 @@ enum UserRole {
 
 // ============ CLIENTS ============
 model Client {
-  id            String     @id @default(cuid())
-  name          String
-  email         String?
-  phone         String?
-  observations  String?
-  createdAt     DateTime   @default(now()) @map("created_at")
-  updatedAt     DateTime   @updatedAt @map("updated_at")
+  id              String          @id @default(cuid())
+  // Dados Básicos
+  name            String          // Nome/Razão Social (Obrigatório)
+  nickname        String?         // Apelido/Nome Fantasia
+  cpfCnpj         String?         @unique @map("cpf_cnpj")
+  status          ClientStatus    @default(ACTIVE)
+  
+  // Localização
+  street          String?         @map("street")
+  number          String?         @map("number")
+  neighborhood    String?         @map("neighborhood")
+  city            String?         @map("city")
+  zipCode         String?         @map("zip_code")
+  state           String?         @map("state")
+  
+  // Múltiplos Contatos
+  clientEmails    ClientEmail[]   @relation("ClientToEmails")
+  clientPhones    ClientPhone[]   @relation("ClientToPhones")
+  clientSocialMedia ClientSocialMedia[] @relation("ClientToSocialMedia")
+  
+  // Observações
+  observations    String?
+  
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
 
-  invoices      Invoice[]
+  invoices        Invoice[]
 
   @@map("clients")
+}
+
+enum ClientStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+model ClientEmail {
+  id        String   @id @default(cuid())
+  email     String
+  clientId  String   @map("client_id")
+  primary   Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  client    Client   @relation("ClientToEmails", fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, email])
+  @@map("client_emails")
+}
+
+model ClientPhone {
+  id          String   @id @default(cuid())
+  phone       String
+  clientId    String   @map("client_id")
+  hasWhatsapp Boolean  @default(false)
+  primary     Boolean  @default(false)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  client      Client   @relation("ClientToPhones", fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, phone])
+  @@map("client_phones")
+}
+
+model ClientSocialMedia {
+  id        String   @id @default(cuid())
+  platform  String   // Instagram, Facebook, LinkedIn, etc
+  url       String
+  clientId  String   @map("client_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  client    Client   @relation("ClientToSocialMedia", fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, platform])
+  @@map("client_social_media")
 }
 
 // ============ CATEGORIES ============

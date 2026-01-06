@@ -67,11 +67,40 @@ export interface Product {
 }
 
 // Client types
+export interface ClientEmail {
+  id?: string;
+  email: string;
+  primary?: boolean;
+}
+
+export interface ClientPhone {
+  id?: string;
+  phone: string;
+  hasWhatsapp?: boolean;
+  primary?: boolean;
+}
+
+export interface ClientSocialMedia {
+  id?: string;
+  platform: string;
+  url: string;
+}
+
 export interface Client {
   id: string;
   name: string;
-  email: string;
-  phone: string;
+  nickname?: string;
+  cpfCnpj?: string;
+  status: 'ACTIVE' | 'INACTIVE' | 'BLOCKED';
+  street?: string;
+  number?: string;
+  neighborhood?: string;
+  city?: string;
+  zipCode?: string;
+  state?: string;
+  clientEmails: ClientEmail[];
+  clientPhones: ClientPhone[];
+  clientSocialMedia: ClientSocialMedia[];
   observations?: string;
   createdAt: Date;
   updatedAt: Date;

@@ -1,19 +1,24 @@
 #!/bin/sh
+set -e
 
 echo "🚀 Iniciando OrchHub Backend..."
 
-# Aguardar PostgreSQL ficar pronto
 echo "⏳ Aguardando banco de dados..."
-sleep 10
+sleep 5
 
-# Run Prisma migrations
-echo "🔄 Aplicando migrations..."
-npx prisma migrate deploy
+echo "🔄 Gerando Prisma Client..."
+npx prisma generate
 
-# Run seed (criar usuário master se não existir)
-echo "🌱 Executando seed..."
-npx ts-node -O '{"module":"commonjs"}' prisma/seed.ts
+if [ "$NODE_ENV" = "development" ]; then
+  echo "🛠 Rodando migrations (DEV)..."
+  npx prisma migrate dev --name auto --skip-seed
+else
+  echo "📦 Aplicando migrations (PROD)..."
+  npx prisma migrate deploy
+fi
 
-# Start the application
+echo "🌱 Executando seed (idempotente)..."
+npx ts-node prisma/seed.ts || true
+
 echo "✅ Iniciando aplicação..."
 npm run start:prod
