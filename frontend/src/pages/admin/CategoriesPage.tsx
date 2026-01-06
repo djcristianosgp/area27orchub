@@ -110,28 +110,26 @@ export const CategoriesPage: React.FC = () => {
         isOpen={isModalOpen}
         title={editingId ? 'Editar Categoria' : 'Nova Categoria'}
         onClose={() => setIsModalOpen(false)}
+        actions={[
+          { label: 'Cancelar', onClick: () => setIsModalOpen(false), variant: 'secondary' },
+          {
+            label: editingId ? 'Atualizar' : 'Criar',
+            onClick: handleSave,
+            variant: 'primary',
+          },
+        ]}
       >
-        <Form
-          fields={[
-            {
-              name: 'name',
-              label: 'Nome',
-              type: 'text',
-              required: true,
-            },
-            {
-              name: 'description',
-              label: 'Descrição',
-              type: 'textarea',
-              required: false,
-            },
-          ]}
-          values={formData}
-          onChange={(e) =>
-            setFormData({ ...formData, [e.target.name]: e.target.value })
-          }
-          onSubmit={handleSave}
-          submitLabel={editingId ? 'Atualizar' : 'Criar'}
+        <FormField
+          label="Nome"
+          value={formData.name}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          required
+        />
+        <TextAreaField
+          label="Descrição"
+          rows={3}
+          value={formData.description}
+          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
         />
       </Modal>
     </AdminLayout>

@@ -6,10 +6,31 @@ import { CreateServiceDto, UpdateServiceDto } from './dtos/service.dto';
 export class ServicesService {
   constructor(private prisma: PrismaService) {}
 
+  private normalizePrice(price: any): number {
+    if (typeof price === 'string') {
+      return parseFloat(price);
+    }
+    return Number(price);
+  }
+
+  private normalizeVariation(variation: any) {
+    return {
+      ...variation,
+      price: this.normalizePrice(variation.price),
+    };
+  }
+
+  private normalizeService(service: any) {
+    return {
+      ...service,
+      variations: service.variations?.map((v: any) => this.normalizeVariation(v)) || [],
+    };
+  }
+
   async create(createServiceDto: CreateServiceDto) {
     const { variations, ...serviceData } = createServiceDto;
 
-    return this.prisma.service.create({
+    const result = await this.prisma.service.create({
       data: {
         ...serviceData,
         variations: {
@@ -20,33 +41,41 @@ export class ServicesService {
         variations: true,
       },
     });
+
+    return this.normalizeService(result);
   }
 
   async findAll() {
-    return this.prisma.service.findMany({
+    const results = await this.prisma.service.findMany({
       include: {
         variations: true,
       },
     });
+
+    return results.map(service => this.normalizeService(service));
   }
 
   async findOne(id: string) {
-    return this.prisma.service.findUnique({
+    const result = await this.prisma.service.findUnique({
       where: { id },
       include: {
         variations: true,
       },
     });
+
+    return result ? this.normalizeService(result) : null;
   }
 
   async update(id: string, updateServiceDto: UpdateServiceDto) {
-    return this.prisma.service.update({
+    const result = await this.prisma.service.update({
       where: { id },
       data: updateServiceDto,
       include: {
         variations: true,
       },
     });
+
+    return this.normalizeService(result);
   }
 
   async delete(id: string) {
@@ -56,12 +85,14 @@ export class ServicesService {
   }
 
   async addVariation(serviceId: string, variationData: any) {
-    return this.prisma.serviceVariation.create({
+    const result = await this.prisma.serviceVariation.create({
       data: {
         ...variationData,
         serviceId,
       },
     });
+
+    return this.normalizeVariation(result);
   }
 
   async deleteVariation(variationId: string) {

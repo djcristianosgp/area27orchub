@@ -4,6 +4,7 @@ import {
   IsNumber,
   IsOptional,
   IsUrl,
+  ValidateIf,
 } from 'class-validator';
 
 export class CreateProductVariationDto {
@@ -15,6 +16,7 @@ export class CreateProductVariationDto {
   @IsNotEmpty()
   price: number;
 
+  @ValidateIf((o) => o.affiliateLink && o.affiliateLink.trim() !== '')
   @IsUrl()
   @IsOptional()
   affiliateLink?: string;

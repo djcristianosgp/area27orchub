@@ -6,10 +6,31 @@ import { CreateProductDto, UpdateProductDto, CreateProductVariationDto } from '.
 export class ProductsService {
   constructor(private prisma: PrismaService) {}
 
+  private normalizePrice(price: any): number {
+    if (typeof price === 'string') {
+      return parseFloat(price);
+    }
+    return Number(price);
+  }
+
+  private normalizeVariation(variation: any) {
+    return {
+      ...variation,
+      price: this.normalizePrice(variation.price),
+    };
+  }
+
+  private normalizeProduct(product: any) {
+    return {
+      ...product,
+      variations: product.variations?.map((v: any) => this.normalizeVariation(v)) || [],
+    };
+  }
+
   async create(createProductDto: CreateProductDto) {
     const { variations, ...productData } = createProductDto;
 
-    return this.prisma.product.create({
+    const result = await this.prisma.product.create({
       data: {
         ...productData,
         variations: {
@@ -23,10 +44,12 @@ export class ProductsService {
         group: true,
       },
     });
+
+    return this.normalizeProduct(result);
   }
 
   async findAll(filters?: { categoryId?: string; brandId?: string; groupId?: string }) {
-    return this.prisma.product.findMany({
+    const results = await this.prisma.product.findMany({
       where: {
         categoryId: filters?.categoryId,
         brandId: filters?.brandId,
@@ -39,10 +62,12 @@ export class ProductsService {
         group: true,
       },
     });
+
+    return results.map(product => this.normalizeProduct(product));
   }
 
   async findOne(id: string) {
-    return this.prisma.product.findUnique({
+    const result = await this.prisma.product.findUnique({
       where: { id },
       include: {
         variations: true,
@@ -51,10 +76,12 @@ export class ProductsService {
         group: true,
       },
     });
+
+    return result ? this.normalizeProduct(result) : null;
   }
 
   async update(id: string, updateProductDto: UpdateProductDto) {
-    return this.prisma.product.update({
+    const result = await this.prisma.product.update({
       where: { id },
       data: updateProductDto,
       include: {
@@ -64,6 +91,8 @@ export class ProductsService {
         group: true,
       },
     });
+
+    return this.normalizeProduct(result);
   }
 
   async delete(id: string) {
@@ -73,12 +102,14 @@ export class ProductsService {
   }
 
   async createVariation(productId: string, createVariationDto: CreateProductVariationDto) {
-    return this.prisma.productVariation.create({
+    const result = await this.prisma.productVariation.create({
       data: {
         ...createVariationDto,
         productId,
       },
     });
+
+    return this.normalizeVariation(result);
   }
 
   async deleteVariation(variationId: string) {
@@ -93,6 +124,6 @@ export class ProductsService {
       orderBy: { price: 'asc' },
     });
 
-    return minVariation?.price || 0;
+    return minVariation ? this.normalizePrice(minVariation.price) : 0;
   }
 }
