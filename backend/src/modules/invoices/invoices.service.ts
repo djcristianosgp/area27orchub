@@ -7,6 +7,36 @@ import { randomUUID } from 'crypto';
 export class InvoicesService {
   constructor(private prisma: PrismaService) {}
 
+  private normalizePrice(price: any): number {
+    if (typeof price === 'string') {
+      return parseFloat(price);
+    }
+    return Number(price);
+  }
+
+  private normalizeItem(item: any) {
+    return {
+      ...item,
+      unitPrice: this.normalizePrice(item.unitPrice),
+      totalPrice: this.normalizePrice(item.totalPrice),
+    };
+  }
+
+  private normalizeGroup(group: any) {
+    return {
+      ...group,
+      items: group.items?.map((item: any) => this.normalizeItem(item)) || [],
+    };
+  }
+
+  private normalizeInvoice(invoice: any) {
+    return {
+      ...invoice,
+      totalAmount: this.normalizePrice(invoice.totalAmount),
+      groups: invoice.groups?.map((group: any) => this.normalizeGroup(group)) || [],
+    };
+  }
+
   async create(createInvoiceDto: CreateInvoiceDto) {
     const publicUrl = randomUUID();
 
@@ -44,11 +74,12 @@ export class InvoicesService {
     // Calculate total
     await this.updateTotal(invoice.id);
 
-    return this.findOne(invoice.id);
+    const result = await this.findOne(invoice.id);
+    return result ? this.normalizeInvoice(result) : null;
   }
 
   async findAll(clientId?: string) {
-    return this.prisma.invoice.findMany({
+    const results = await this.prisma.invoice.findMany({
       where: clientId ? { clientId } : {},
       include: {
         groups: {
@@ -58,10 +89,12 @@ export class InvoicesService {
         },
       },
     });
+
+    return results.map(invoice => this.normalizeInvoice(invoice));
   }
 
   async findOne(id: string) {
-    return this.prisma.invoice.findUnique({
+    const result = await this.prisma.invoice.findUnique({
       where: { id },
       include: {
         client: true,
@@ -77,10 +110,12 @@ export class InvoicesService {
         },
       },
     });
+
+    return result ? this.normalizeInvoice(result) : null;
   }
 
   async findByPublicUrl(publicUrl: string) {
-    return this.prisma.invoice.findUnique({
+    const result = await this.prisma.invoice.findUnique({
       where: { publicUrl },
       include: {
         client: true,
@@ -96,6 +131,8 @@ export class InvoicesService {
         },
       },
     });
+
+    return result ? this.normalizeInvoice(result) : null;
   }
 
   async update(id: string, updateInvoiceDto: UpdateInvoiceDto) {
@@ -131,12 +168,12 @@ export class InvoicesService {
 
     return this.create({
       clientId: invoice.clientId,
-      groups: invoice.groups.map((group) => ({
+      groups: invoice.groups.map((group: any) => ({
         name: group.name,
         type: group.type as any,
-        items: group.items.map((item) => ({
+        items: group.items.map((item: any) => ({
           quantity: item.quantity,
-          unitPrice: Number(item.unitPrice),
+          unitPrice: this.normalizePrice(item.unitPrice),
           productId: item.productId,
           serviceId: item.serviceId,
           productVariationId: item.productVariationId,
@@ -147,7 +184,7 @@ export class InvoicesService {
   }
 
   async approveInvoice(publicUrl: string) {
-    return this.prisma.invoice.update({
+    const result = await this.prisma.invoice.update({
       where: { publicUrl },
       data: {
         status: 'APPROVED',
@@ -155,10 +192,12 @@ export class InvoicesService {
         responseDate: new Date(),
       },
     });
+    
+    return this.normalizeInvoice(result);
   }
 
   async refuseInvoice(publicUrl: string) {
-    return this.prisma.invoice.update({
+    const result = await this.prisma.invoice.update({
       where: { publicUrl },
       data: {
         status: 'REFUSED',
@@ -166,6 +205,8 @@ export class InvoicesService {
         responseDate: new Date(),
       },
     });
+    
+    return this.normalizeInvoice(result);
   }
 
   async delete(id: string) {

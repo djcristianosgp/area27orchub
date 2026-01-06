@@ -4,7 +4,6 @@ import {
   IsOptional,
   IsArray,
   IsNumber,
-  IsUUID,
   IsEnum,
 } from 'class-validator';
 
@@ -29,19 +28,19 @@ export class CreateInvoiceItemDto {
   @IsNotEmpty()
   unitPrice: number;
 
-  @IsUUID()
+  @IsString()
   @IsOptional()
   productId?: string;
 
-  @IsUUID()
+  @IsString()
   @IsOptional()
   serviceId?: string;
 
-  @IsUUID()
+  @IsString()
   @IsOptional()
   productVariationId?: string;
 
-  @IsUUID()
+  @IsString()
   @IsOptional()
   serviceVariationId?: string;
 }
@@ -61,7 +60,7 @@ export class CreateInvoiceGroupDto {
 }
 
 export class CreateInvoiceDto {
-  @IsUUID()
+  @IsString()
   @IsNotEmpty()
   clientId: string;
 
