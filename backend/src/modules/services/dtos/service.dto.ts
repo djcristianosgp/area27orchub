@@ -3,6 +3,7 @@ import {
   IsString,
   IsNumber,
   IsOptional,
+  IsArray,
 } from 'class-validator';
 
 export class CreateServiceVariationDto {
@@ -28,8 +29,9 @@ export class CreateServiceDto {
   @IsOptional()
   description?: string;
 
-  @IsNotEmpty()
-  variations: CreateServiceVariationDto[];
+  @IsArray()
+  @IsOptional()
+  variations?: CreateServiceVariationDto[];
 }
 
 export class UpdateServiceDto {

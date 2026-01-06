@@ -33,9 +33,11 @@ export class ProductsService {
     const result = await this.prisma.product.create({
       data: {
         ...productData,
-        variations: {
-          create: variations,
-        },
+        ...(variations && variations.length > 0 && {
+          variations: {
+            create: variations,
+          },
+        }),
       },
       include: {
         variations: true,

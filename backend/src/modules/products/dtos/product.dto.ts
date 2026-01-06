@@ -5,6 +5,7 @@ import {
   IsOptional,
   IsUrl,
   ValidateIf,
+  IsArray,
 } from 'class-validator';
 
 export class CreateProductVariationDto {
@@ -51,8 +52,9 @@ export class CreateProductDto {
   @IsOptional()
   image?: string;
 
-  @IsNotEmpty()
-  variations: CreateProductVariationDto[];
+  @IsArray()
+  @IsOptional()
+  variations?: CreateProductVariationDto[];
 }
 
 export class UpdateProductDto {

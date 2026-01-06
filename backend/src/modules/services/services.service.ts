@@ -33,9 +33,11 @@ export class ServicesService {
     const result = await this.prisma.service.create({
       data: {
         ...serviceData,
-        variations: {
-          create: variations,
-        },
+        ...(variations && variations.length > 0 && {
+          variations: {
+            create: variations,
+          },
+        }),
       },
       include: {
         variations: true,

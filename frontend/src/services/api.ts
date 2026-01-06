@@ -167,6 +167,15 @@ class ApiClient {
     return this.client.delete(`/services/${id}`);
   }
 
+  // Service variations endpoints
+  async createServiceVariation(serviceId: string, data: any) {
+    return this.client.post(`/services/${serviceId}/variations`, data);
+  }
+
+  async deleteServiceVariation(serviceId: string, variationId: string) {
+    return this.client.delete(`/services/${serviceId}/variations/${variationId}`);
+  }
+
   // Invoices endpoints
   async createInvoice(data: any) {
     return this.client.post('/invoices', data);

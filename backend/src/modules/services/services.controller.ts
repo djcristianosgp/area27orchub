@@ -10,7 +10,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { ServicesService } from './services.service';
-import { CreateServiceDto, UpdateServiceDto } from './dtos/service.dto';
+import { CreateServiceDto, UpdateServiceDto, CreateServiceVariationDto } from './dtos/service.dto';
 
 @Controller('services')
 export class ServicesController {
@@ -44,5 +44,23 @@ export class ServicesController {
   @HttpCode(HttpStatus.NO_CONTENT)
   delete(@Param('id') id: string) {
     return this.servicesService.delete(id);
+  }
+
+  @Post(':serviceId/variations')
+  @HttpCode(HttpStatus.CREATED)
+  createVariation(
+    @Param('serviceId') serviceId: string,
+    @Body() createVariationDto: CreateServiceVariationDto,
+  ) {
+    return this.servicesService.addVariation(serviceId, createVariationDto);
+  }
+
+  @Delete(':serviceId/variations/:variationId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteVariation(
+    @Param('serviceId') serviceId: string,
+    @Param('variationId') variationId: string,
+  ) {
+    return this.servicesService.deleteVariation(variationId);
   }
 }
