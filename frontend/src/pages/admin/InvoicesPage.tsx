@@ -148,8 +148,17 @@ export const InvoicesPage: React.FC = () => {
 
   const handleExportPDF = async (invoice: Invoice) => {
     try {
-      // TODO: Implementar exportação PDF
-      alert('Funcionalidade de exportar PDF em desenvolvimento');
+      const res = await (api as any).downloadInvoicePdf(invoice.id);
+      const blob = new Blob([res.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const filename = `Orcamento_${invoice.code || invoice.id.substring(0, 8)}.pdf`;
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Erro ao exportar PDF:', error);
     }

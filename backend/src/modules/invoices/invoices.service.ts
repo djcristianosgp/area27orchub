@@ -10,6 +10,10 @@ import {
 } from './dtos/invoice.dto';
 import { randomUUID } from 'crypto';
 import { Decimal } from '@prisma/client/runtime/library';
+// PDF
+// Usamos require para evitar problemas de typings e manter compatibilidade
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const PDFDocument = require('pdfkit');
 
 @Injectable()
 export class InvoicesService {
@@ -27,6 +31,210 @@ export class InvoicesService {
       return price.toNumber();
     }
     return Number(price);
+  }
+
+  /**
+   * Formata valores monetários para BRL
+   */
+  private formatCurrencyBRL(value: number): string {
+    try {
+      return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
+    } catch {
+      return `R$ ${(value || 0).toFixed(2)}`;
+    }
+  }
+
+  /**
+   * Gera um Buffer de PDF para um orçamento já normalizado
+   */
+  private async buildInvoicePdfBuffer(invoice: any): Promise<Buffer> {
+    return new Promise(async (resolve) => {
+      const margins = { top: 50, left: 50, right: 50, bottom: 50 };
+      const doc = new PDFDocument({ size: 'A4', margins });
+      const chunks: Buffer[] = [];
+      doc.on('data', (c: Buffer) => chunks.push(c));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+
+      // Tentar obter dados de empresa (primeira empresa cadastrada)
+      let company: any = null;
+      try {
+        company = await this.prisma.company.findFirst();
+      } catch {}
+
+      // Cabeçalho
+      doc.fillColor('#111827').fontSize(20).text('Orçamento', { align: 'left' });
+      doc.moveDown(0.2);
+
+      const code = invoice.code || (invoice.id ? invoice.id.substring(0, 8) : '');
+      const createdAt = invoice.createdAt ? new Date(invoice.createdAt) : new Date();
+      const validDate = invoice.proposalValidDate ? new Date(invoice.proposalValidDate) : null;
+
+      doc.fontSize(10).fillColor('#6B7280');
+      doc.text(`Código: ${code}`);
+      doc.text(`Criado em: ${createdAt.toLocaleDateString('pt-BR')}`);
+      if (validDate) doc.text(`Válido até: ${validDate.toLocaleDateString('pt-BR')}`);
+      doc.moveDown(0.6);
+
+      // Caixa Empresa + Valor total (com coordenadas absolutas e altura fixa)
+      const startBoxY = doc.y;
+      const boxWidth = doc.page.width - margins.left - margins.right;
+      const boxHeight = 80;
+      doc.roundedRect(margins.left, startBoxY, boxWidth, boxHeight, 8).stroke('#E5E7EB');
+
+      // Conteúdo da empresa (lado esquerdo)
+      const leftPadding = 14;
+      const textStartX = margins.left + leftPadding;
+      const textStartY = startBoxY + leftPadding - 2;
+      doc.fontSize(12).fillColor('#111827').text(company?.name || 'Sua Empresa', textStartX, textStartY, { width: boxWidth / 2 - 30 });
+      let nextY = doc.y;
+      if (company?.nickname) {
+        doc.fontSize(10).fillColor('#6B7280').text(company.nickname, textStartX, nextY);
+        nextY = doc.y;
+      }
+      if (company?.city || company?.state) {
+        doc.fontSize(10).fillColor('#6B7280').text(`${company?.city || ''}${company?.state ? ', ' + company.state : ''}`, textStartX, nextY);
+      }
+
+      // Valor total (lado direito do box)
+      const totalLabel = 'Valor Total';
+      const totalValue = this.formatCurrencyBRL(this.normalizePrice(invoice.finalAmount ?? invoice.totalAmount ?? 0));
+      const totalBoxWidth = 170;
+      const totalX = margins.left + boxWidth - totalBoxWidth - 14;
+      const totalY = startBoxY + 16;
+      doc.fontSize(10).fillColor('#6B7280').text(totalLabel, totalX, totalY, { width: totalBoxWidth, align: 'right' });
+      doc.fontSize(20).fillColor('#059669').text(totalValue, totalX, totalY + 14, { width: totalBoxWidth, align: 'right' });
+
+      // Posiciona o cursor abaixo da caixa
+      doc.y = startBoxY + boxHeight + 14;
+
+      // Cliente
+      if (invoice.client) {
+        doc.fontSize(12).fillColor('#111827').text('Cliente', margins.left, doc.y, { underline: true });
+        doc.moveDown(0.3);
+        doc.fontSize(10).fillColor('#111827').text(`Nome: ${invoice.client.name}`, margins.left);
+        if (invoice.client.email) doc.fillColor('#6B7280').text(`Email: ${invoice.client.email}`, margins.left);
+        if (invoice.client.phone) doc.fillColor('#6B7280').text(`Telefone: ${invoice.client.phone}`, margins.left);
+        doc.moveDown(0.6);
+      }
+
+      // Itens por grupo
+      const col = {
+        itemX: margins.left,
+        qtyX: 360,
+        unitX: 430,
+        totalX: 510,
+        lineRight: doc.page.width - margins.right,
+      };
+
+      const drawTableHeader = () => {
+        const headerY = doc.y;
+        doc.fillColor('#111827').fontSize(11).text('Item', col.itemX, headerY);
+        doc.fontSize(11).text('Qtd', col.qtyX, headerY, { width: 40, align: 'right' });
+        doc.text('Unitário', col.unitX, headerY, { width: 70, align: 'right' });
+        doc.text('Total', col.totalX, headerY, { width: 60, align: 'right' });
+        doc.moveDown(0.2);
+        doc.strokeColor('#E5E7EB').lineWidth(1).moveTo(col.itemX, doc.y).lineTo(col.lineRight, doc.y).stroke();
+        doc.moveDown(0.2);
+      };
+
+      if (invoice.groups?.length) {
+        invoice.groups.forEach((group: any, gIdx: number) => {
+          doc.fontSize(12).fillColor('#111827').text(`${gIdx + 1}. ${group.name}`);
+          doc.moveDown(0.2);
+          drawTableHeader();
+
+          group.items?.forEach((item: any) => {
+            const name = item.customName || item.product?.name || item.service?.name || 'Item';
+            const descParts: string[] = [];
+            if (item.customDescription) descParts.push(item.customDescription);
+            if (item.product?.description) descParts.push(item.product.description);
+            if (item.service?.description) descParts.push(item.service.description);
+            if (item.productVariation?.name) descParts.push(`Variação: ${item.productVariation.name}`);
+            if (item.productVariation?.observation) descParts.push(`Obs: ${item.productVariation.observation}`);
+            if (item.serviceVariation?.name) descParts.push(`Variação: ${item.serviceVariation.name}`);
+            if (item.serviceVariation?.observation) descParts.push(`Obs: ${item.serviceVariation.observation}`);
+
+            const unit = this.normalizePrice(item.customPrice ?? item.unitPrice);
+            const total = this.normalizePrice(item.totalPrice);
+
+            const startY = doc.y;
+            // Coluna do item (nome e descrições)
+            doc.fontSize(10).fillColor('#111827').text(name, col.itemX, startY, { width: 290 });
+            if (descParts.length) {
+              doc.moveDown(0.1);
+              doc.fontSize(9).fillColor('#6B7280').text(descParts.join(' • '), col.itemX, doc.y, { width: 290 });
+            }
+            const leftBottomY = doc.y;
+
+            // Colunas numéricas alinhadas pela linha superior do item
+            doc.fontSize(10).fillColor('#111827').text(String(item.quantity || 1), col.qtyX, startY, { width: 40, align: 'right' });
+            doc.text(this.formatCurrencyBRL(unit), col.unitX, startY, { width: 70, align: 'right' });
+            doc.text(this.formatCurrencyBRL(total), col.totalX, startY, { width: 60, align: 'right' });
+
+            // Avança o cursor para a próxima linha considerando a altura do bloco esquerdo
+            doc.y = Math.max(leftBottomY, startY + 14) + 6;
+          });
+
+          doc.moveDown(0.5);
+        });
+      }
+
+      // Totais
+      const subtotal = this.normalizePrice(invoice.totalAmount || 0);
+      const discounts = this.normalizePrice(invoice.discounts || 0);
+      const additions = this.normalizePrice(invoice.additions || 0);
+      const displacement = this.normalizePrice(invoice.displacement || 0);
+      const final = subtotal - discounts + additions + displacement;
+
+      doc.moveDown(0.5);
+      doc.strokeColor('#10B981').lineWidth(2).moveTo(margins.left, doc.y).lineTo(doc.page.width - margins.right, doc.y).stroke();
+      doc.moveDown(0.6);
+      const totalsX = 320;
+      const label = (t: string) => doc.fontSize(10).fillColor('#374151').text(t, totalsX, doc.y, { width: 120, align: 'right' });
+      const val = (n: number, color = '#111827') => doc.fontSize(10).fillColor(color).text(this.formatCurrencyBRL(n), totalsX + 130, doc.y, { width: 130, align: 'right' });
+      label('Subtotal'); val(subtotal);
+      if (discounts > 0) { label('Descontos'); val(-discounts, '#059669'); }
+      if (additions > 0) { label('Acréscimos'); val(additions); }
+      if (displacement > 0) { label('Deslocamento'); val(displacement); }
+      doc.moveDown(0.2);
+      doc.strokeColor('#E5E7EB').lineWidth(1).moveTo(totalsX, doc.y).lineTo(doc.page.width - margins.right, doc.y).stroke();
+      doc.moveDown(0.2);
+      doc.fontSize(12).fillColor('#111827').text('Valor Total', totalsX, doc.y, { width: 120, align: 'right' });
+      doc.fontSize(14).fillColor('#059669').text(this.formatCurrencyBRL(final), totalsX + 130, doc.y, { width: 130, align: 'right' });
+
+      // Observações
+      if (invoice.observations) {
+        doc.moveDown(1);
+        doc.fontSize(11).fillColor('#111827').text('Observações', { underline: true }).moveDown(0.3);
+        doc.fontSize(10).fillColor('#374151').text(invoice.observations);
+      }
+
+      // Rodapé
+      doc.moveDown(1);
+      doc.fontSize(8).fillColor('#9CA3AF').text('Documento gerado automaticamente pelo sistema de orçamentos.', 50, doc.page.height - 60, { align: 'center' });
+
+      doc.end();
+    });
+  }
+
+  /**
+   * Gera PDF (Buffer) por ID
+   */
+  async getPdfBufferById(id: string): Promise<{ filename: string; buffer: Buffer }> {
+    const invoice = await this.findOne(id);
+    const buffer = await this.buildInvoicePdfBuffer(invoice);
+    const filename = `Orcamento_${invoice.code || invoice.id.substring(0, 8)}.pdf`;
+    return { filename, buffer };
+  }
+
+  /**
+   * Gera PDF (Buffer) por URL pública
+   */
+  async getPdfBufferByPublicUrl(publicUrl: string): Promise<{ filename: string; buffer: Buffer }> {
+    const invoice = await this.findByPublicUrl(publicUrl);
+    const buffer = await this.buildInvoicePdfBuffer(invoice);
+    const filename = `Orcamento_${invoice.code || invoice.id.substring(0, 8)}.pdf`;
+    return { filename, buffer };
   }
 
   /**

@@ -221,6 +221,15 @@ class ApiClient {
     return this.client.delete(`/invoices/${id}`);
   }
 
+  // Invoice PDF endpoints
+  async downloadInvoicePdf(id: string) {
+    return this.client.get(`/invoices/${id}/pdf`, { responseType: 'blob' });
+  }
+
+  async downloadPublicInvoicePdf(publicUrl: string) {
+    return this.client.get(`/invoices/public/${publicUrl}/pdf`, { responseType: 'blob' });
+  }
+
   // Public invoice endpoints
   async getPublicInvoice(publicUrl: string) {
     return this.client.get(`/invoices/public/${publicUrl}`);

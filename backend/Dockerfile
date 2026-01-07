@@ -5,7 +5,8 @@ RUN apk add --no-cache openssl netcat-openbsd bash
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci
+# Usamos npm install para permitir inclusão de novas dependências sem travar no package-lock
+RUN npm install
 
 COPY . .
 

@@ -62,6 +62,31 @@ export const PublicInvoicePage: React.FC = () => {
     }
   };
 
+  // Baixar PDF (público)
+  const handleDownloadPdf = async () => {
+    if (!publicUrl) return;
+    try {
+      const res = await (api as any).downloadPublicInvoicePdf(publicUrl);
+      const blob = new Blob([res.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const filename = `Orcamento_${invoice?.code || (invoice?.id || '').substring(0, 8)}.pdf`;
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      setError('Não foi possível baixar o PDF do orçamento');
+    }
+  };
+
+  // Imprimir página
+  const handlePrint = () => {
+    window.print();
+  };
+
   // Função para converter data para formato BR (DD/MM/YYYY) sem problemas de timezone
   const formatDateBR = (dateString: string): string => {
     const date = new Date(dateString);
@@ -146,6 +171,26 @@ export const PublicInvoicePage: React.FC = () => {
                 <p className="text-xs text-blue-100">Valor Total</p>
                 <p className="text-2xl font-bold">R$ {calculateFinalAmount().toFixed(2)}</p>
               </div>
+            </div>
+
+            {/* Ações: PDF e Imprimir */}
+            <div className="flex items-center gap-3 justify-end mt-2">
+              <button
+                onClick={handleDownloadPdf}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-md transition"
+                title="Baixar PDF"
+              >
+                <span>📄</span>
+                <span>Baixar PDF</span>
+              </button>
+              <button
+                onClick={handlePrint}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-white text-blue-700 hover:bg-blue-50 font-semibold rounded-md transition"
+                title="Imprimir"
+              >
+                <span>🖨️</span>
+                <span>Imprimir</span>
+              </button>
             </div>
 
             {/* Dados da Empresa */}

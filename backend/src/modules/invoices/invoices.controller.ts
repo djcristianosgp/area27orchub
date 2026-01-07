@@ -10,7 +10,9 @@ import {
   HttpCode,
   HttpStatus,
   Put,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { InvoicesService } from './invoices.service';
 import { 
   CreateInvoiceDto, 
@@ -36,6 +38,19 @@ export class InvoicesController {
   @HttpCode(HttpStatus.OK)
   findByPublicUrl(@Param('publicUrl') publicUrl: string) {
     return this.invoicesService.findByPublicUrl(publicUrl);
+  }
+
+  /**
+   * Gera PDF do orçamento pela URL pública
+   * GET /invoices/public/:publicUrl/pdf
+   */
+  @Get('public/:publicUrl/pdf')
+  @HttpCode(HttpStatus.OK)
+  async getPublicPdf(@Param('publicUrl') publicUrl: string, @Res() res: Response) {
+    const { filename, buffer } = await this.invoicesService.getPdfBufferByPublicUrl(publicUrl);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    return res.send(buffer);
   }
 
   /**
@@ -118,6 +133,19 @@ export class InvoicesController {
   @HttpCode(HttpStatus.OK)
   findOne(@Param('id') id: string) {
     return this.invoicesService.findOne(id);
+  }
+
+  /**
+   * Gera PDF do orçamento (admin)
+   * GET /invoices/:id/pdf
+   */
+  @Get(':id/pdf')
+  @HttpCode(HttpStatus.OK)
+  async getPdf(@Param('id') id: string, @Res() res: Response) {
+    const { filename, buffer } = await this.invoicesService.getPdfBufferById(id);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    return res.send(buffer);
   }
 
   /**
