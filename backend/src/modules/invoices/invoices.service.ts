@@ -30,9 +30,31 @@ export class InvoicesService {
   }
 
   private normalizeInvoice(invoice: any) {
+    // Map DB-mapped fields to API contract expected by frontend
+    const responseStatus = invoice.clientResponseStatus ?? invoice.responseStatus;
+    const responseDate = invoice.clientResponseDate ?? invoice.responseDate;
+
+    // Enrich client with primary email/phone for public view
+    let client = invoice.client;
+    if (client) {
+      const emails = client.clientEmails || [];
+      const phones = client.clientPhones || [];
+      const primaryEmail = emails.find((e: any) => e.primary) || emails[0];
+      const primaryPhone = phones.find((p: any) => p.primary) || phones[0];
+      client = {
+        id: client.id,
+        name: client.name,
+        email: primaryEmail?.email,
+        phone: primaryPhone?.phone,
+      };
+    }
+
     return {
       ...invoice,
+      client,
       totalAmount: this.normalizePrice(invoice.totalAmount),
+      responseStatus,
+      responseDate,
       groups: invoice.groups?.map((group: any) => this.normalizeGroup(group)) || [],
     };
   }
@@ -72,10 +94,7 @@ export class InvoicesService {
             invoiceGroupId: createdGroup.id,
             quantity: item.quantity,
             unitPrice: item.unitPrice as any,
-            totalPrice: ((item.customPrice ?? item.unitPrice) as any) * item.quantity,
-            customName: item.customName,
-            customDescription: item.customDescription,
-            customPrice: item.customPrice as any,
+            totalPrice: (item.unitPrice as any) * item.quantity,
             productId: item.productId,
             serviceId: item.serviceId,
             productVariationId: item.productVariationId,
@@ -157,7 +176,12 @@ export class InvoicesService {
     const result = await this.prisma.invoice.findUnique({
       where: { id },
       include: {
-        client: true,
+        client: {
+          include: {
+            clientEmails: true,
+            clientPhones: true,
+          },
+        },
         groups: {
           include: {
             items: {
@@ -168,7 +192,6 @@ export class InvoicesService {
             },
           },
         },
-        paymentConditions: true,
       },
     });
 
@@ -179,7 +202,12 @@ export class InvoicesService {
     const result = await this.prisma.invoice.findUnique({
       where: { publicUrl },
       include: {
-        client: true,
+        client: {
+          include: {
+            clientEmails: true,
+            clientPhones: true,
+          },
+        },
         groups: {
           include: {
             items: {
@@ -190,7 +218,6 @@ export class InvoicesService {
             },
           },
         },
-        paymentConditions: true,
       },
     });
 
@@ -257,9 +284,6 @@ export class InvoicesService {
             return {
               quantity: item.quantity,
               unitPrice,
-              customName: item.customName,
-              customDescription: item.customDescription,
-              customPrice: updatePrices ? null : item.customPrice,
               productId: item.productId,
               serviceId: item.serviceId,
               productVariationId: item.productVariationId,
@@ -294,6 +318,12 @@ export class InvoicesService {
       throw new Error('Invoice not found');
     }
 
+    // Validate status is a valid enum value
+    const validStatuses = ['DRAFT', 'READY', 'EXPIRED', 'APPROVED', 'REFUSED', 'COMPLETED', 'INVOICED', 'ABANDONED', 'DESISTED'];
+    if (!validStatuses.includes(status)) {
+      throw new Error(`Invalid status: ${status}. Valid values are: ${validStatuses.join(', ')}`);
+    }
+
     // Check if status transition is valid
     if (invoice.status === 'APPROVED' && !['COMPLETED', 'INVOICED'].includes(status)) {
       throw new Error('Approved invoices can only be marked as COMPLETED or INVOICED');
@@ -307,7 +337,9 @@ export class InvoicesService {
 
     const result = await this.prisma.invoice.update({
       where: { id },
-      data,
+      data: {
+        status: status as any,
+      },
     });
 
     return this.normalizeInvoice(result);

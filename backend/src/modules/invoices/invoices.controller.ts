@@ -17,6 +17,28 @@ import { CreateInvoiceDto, UpdateInvoiceDto } from './dtos/invoice.dto';
 export class InvoicesController {
   constructor(private invoicesService: InvoicesService) {}
 
+  // Public endpoints - MUST come before parameterized routes
+  @Get('public/:publicUrl')
+  findByPublicUrl(@Param('publicUrl') publicUrl: string) {
+    return this.invoicesService.findByPublicUrl(publicUrl);
+  }
+
+  @Post('public/:publicUrl/approve')
+  @HttpCode(HttpStatus.OK)
+  approveInvoice(@Param('publicUrl') publicUrl: string) {
+    return this.invoicesService.approveInvoice(publicUrl);
+  }
+
+  @Post('public/:publicUrl/refuse')
+  @HttpCode(HttpStatus.OK)
+  refuseInvoice(
+    @Param('publicUrl') publicUrl: string,
+    @Body() body?: { reason?: string },
+  ) {
+    return this.invoicesService.refuseInvoice(publicUrl, body?.reason);
+  }
+
+  // Admin CRUD endpoints
   @Post()
   @HttpCode(HttpStatus.CREATED)
   create(@Body() createInvoiceDto: CreateInvoiceDto) {
@@ -75,27 +97,6 @@ export class InvoicesController {
   @HttpCode(HttpStatus.NO_CONTENT)
   delete(@Param('id') id: string) {
     return this.invoicesService.delete(id);
-  }
-
-  // Public endpoints
-  @Get('public/:publicUrl')
-  findByPublicUrl(@Param('publicUrl') publicUrl: string) {
-    return this.invoicesService.findByPublicUrl(publicUrl);
-  }
-
-  @Post('public/:publicUrl/approve')
-  @HttpCode(HttpStatus.OK)
-  approveInvoice(@Param('publicUrl') publicUrl: string) {
-    return this.invoicesService.approveInvoice(publicUrl);
-  }
-
-  @Post('public/:publicUrl/refuse')
-  @HttpCode(HttpStatus.OK)
-  refuseInvoice(
-    @Param('publicUrl') publicUrl: string,
-    @Body() body?: { reason?: string },
-  ) {
-    return this.invoicesService.refuseInvoice(publicUrl, body?.reason);
   }
 
   @Post('public/:publicUrl/abandon')

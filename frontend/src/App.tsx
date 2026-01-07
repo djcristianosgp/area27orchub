@@ -3,13 +3,14 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { LoginPage } from '@pages/LoginPage';
 import { CouponsPublicPage } from '@pages/CouponsPublicPage';
 import { PublicInvoicePage } from '@pages/PublicInvoicePage';
+import { ProductsPublicPage } from '@pages/ProductsPublicPage';
 import { ProtectedRoute } from '@components/ProtectedRoute';
 import {
   DashboardPage,
   ClientsPage,
   ProductsPage,
   ServicesPage,
-  InvoicesListPage,
+  InvoicesPage,
   CouponsPage,
   CategoriesPage,
   BrandsPage,
@@ -25,6 +26,7 @@ export function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<LoginPage />} />
         <Route path="/coupons" element={<CouponsPublicPage />} />
+        <Route path="/products" element={<ProductsPublicPage />} />
         <Route path="/invoices/:publicUrl" element={<PublicInvoicePage />} />
         <Route path="/" element={<Navigate to="/admin" replace />} />
 
@@ -65,7 +67,7 @@ export function App() {
           path="/admin/invoices"
           element={
             <ProtectedRoute>
-              <InvoicesListPage />
+              <InvoicesPage />
             </ProtectedRoute>
           }
         />

@@ -281,11 +281,6 @@ model InvoiceItem {
   unitPrice           Decimal    @db.Decimal(10, 2)
   totalPrice          Decimal    @db.Decimal(12, 2)
   
-  // Campos customizáveis (exclusivos deste orçamento)
-  customName          String?    // Nome customizado
-  customDescription   String?    // Descrição customizada
-  customPrice         Decimal?   @db.Decimal(10, 2) // Preço customizado
-  
   invoiceId           String     @map("invoiceId")
   invoiceGroupId      String     @map("invoiceGroupId")
   productId           String?    @map("productId")
