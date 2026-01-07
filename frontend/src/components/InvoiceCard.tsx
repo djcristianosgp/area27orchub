@@ -48,7 +48,7 @@ export const InvoiceCard: React.FC<InvoiceCardProps> = ({
         <div className="space-y-2 mb-3">
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <Calendar className="h-4 w-4" />
-            <span>Criado em {formatDate(invoice.createdAt)}</span>
+            <span>Criado em {formatDate(invoice.createdAt)}</span>           
           </div>
 
           {invoice.proposalValidDate && (

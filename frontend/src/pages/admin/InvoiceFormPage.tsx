@@ -42,12 +42,13 @@ export const InvoiceFormPage: React.FC = () => {
   
   // Função para converter data para formato de input (YYYY-MM-DD) sem problemas de timezone
   const formatDateForInput = (dateString: string): string => {
-    const date = new Date(dateString);
-    // Ajusta para timezone local sem converter para UTC
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    // Se já está no formato YYYY-MM-DD, retorna direto
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+      return dateString;
+    }
+    // Se está no formato ISO com hora (ex: 2026-01-21T00:00:00.000Z), extrai apenas a data
+    // Isso evita conversões de timezone que causam perda de um dia
+    return dateString.split('T')[0];
   };
   
   const [clients, setClients] = useState<Client[]>([]);

@@ -385,6 +385,9 @@ const GridView: React.FC<ViewProps> = ({
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Criado em
               </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Vence em
+              </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Ações
               </th>
@@ -407,6 +410,9 @@ const GridView: React.FC<ViewProps> = ({
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {formatDate(invoice.createdAt.toString())}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {formatDate(invoice.proposalValidDate?.toString() || '')}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right">
                   <InvoiceActionsMenu invoice={invoice} onUpdate={onUpdate} compact />

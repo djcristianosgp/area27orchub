@@ -377,6 +377,11 @@ export const InvoicesPage: React.FC = () => {
       render: (value: string) => new Date(value).toLocaleDateString('pt-BR'),
     },
     {
+      key: 'proposalValidDate',
+      label: 'Vence em',
+      render: (value: string) => new Date(value).toLocaleDateString('pt-BR'),
+    },
+    {
       key: 'totalAmount',
       label: 'Total',
       render: (value: number) => `R$ ${(value || 0).toFixed(2)}`,
@@ -541,6 +546,7 @@ export const InvoicesPage: React.FC = () => {
 
               <p className="text-xs text-gray-500 pt-2">
                 Criado em {new Date(invoice.createdAt).toLocaleDateString('pt-BR')}
+                 <br />Vence em {new Date(invoice.proposalValidDate).toLocaleDateString('pt-BR')}
               </p>
             </div>
           </Card>
@@ -780,13 +786,14 @@ export const InvoicesPage: React.FC = () => {
               <p className="text-xs text-gray-500 flex items-center gap-2">
                 <span>📅</span>
                 <span>Criado em {new Date(selectedInvoice.createdAt).toLocaleString('pt-BR')}</span>
+                <span>Vence em {new Date(selectedInvoice?.proposalValidDate).toLocaleString('pt-BR')}</span>
               </p>
             </div>
           </div>
         )}
       </Modal>
 
-      {/* Modal de Edição */}
+      {/* Modal de Edição */}''
       <Modal
         isOpen={editModalOpen}
         title={`✏️ Editar Orçamento - ${selectedInvoice?.id.substring(0, 8)}`}

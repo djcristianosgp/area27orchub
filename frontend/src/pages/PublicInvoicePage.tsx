@@ -215,8 +215,10 @@ export const PublicInvoicePage: React.FC = () => {
                         <div key={item.id} className="flex justify-between items-start bg-white p-4 rounded-lg shadow-sm">
                           <div className="flex-1">
                             <div className="mb-3">
-                              {item.customName && (
-                                <p className="font-bold text-gray-900 text-lg">{item.customName}</p>
+                              {(item.customName || item.product?.name || item.service?.name) && (
+                                <p className="font-bold text-gray-900 text-lg">
+                                  {item.customName || item.product?.name || item.service?.name}
+                                </p>
                               )}
                               {item.customDescription && (
                                 <p className="text-sm text-gray-600 mb-2">{item.customDescription}</p>
