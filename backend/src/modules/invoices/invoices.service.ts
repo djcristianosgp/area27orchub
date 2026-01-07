@@ -403,7 +403,34 @@ export class InvoicesService {
       throw new BadRequestException('Este orçamento não está mais disponível');
     }
 
-    return this.normalizeInvoice(result);
+    // Enriquecer items com dados das variações de produto e serviço
+    const enrichedResult = await Promise.all(
+      result.groups.map(async (group: any) => ({
+        ...group,
+        items: await Promise.all(
+          group.items.map(async (item: any) => {
+            let productVariation = null;
+            let serviceVariation = null;
+            
+            if (item.productVariationId) {
+              productVariation = await this.prisma.productVariation.findUnique({
+                where: { id: item.productVariationId },
+              });
+            }
+            
+            if (item.serviceVariationId) {
+              serviceVariation = await this.prisma.serviceVariation.findUnique({
+                where: { id: item.serviceVariationId },
+              });
+            }
+            
+            return { ...item, productVariation, serviceVariation };
+          })
+        ),
+      }))
+    );
+
+    return this.normalizeInvoice({ ...result, groups: enrichedResult });
   }
 
   /**

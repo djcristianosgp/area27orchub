@@ -40,6 +40,16 @@ export const InvoiceFormPage: React.FC = () => {
   const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
   
+  // Função para converter data para formato de input (YYYY-MM-DD) sem problemas de timezone
+  const formatDateForInput = (dateString: string): string => {
+    const date = new Date(dateString);
+    // Ajusta para timezone local sem converter para UTC
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  
   const [clients, setClients] = useState<Client[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [services, setServices] = useState<Service[]>([]);
@@ -83,7 +93,7 @@ export const InvoiceFormPage: React.FC = () => {
         // Preencher formulário com dados do orçamento
         setFormData({
           clientId: inv.clientId,
-          proposalValidDate: inv.proposalValidDate ? new Date(inv.proposalValidDate).toISOString().split('T')[0] : undefined,
+          proposalValidDate: inv.proposalValidDate ? formatDateForInput(inv.proposalValidDate) : undefined,
           origin: inv.origin || undefined,
           observations: inv.observations || undefined,
           responsible: inv.responsible || undefined,
