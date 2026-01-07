@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AdminLayout, Table, Modal, FormField, SelectField, Button, PageHeader, Card, CardBody, Badge, EmptyState } from '@components/index';
 import api from '@services/api';
 import type { Invoice, Client, Product, Service } from '../../types/index';
+import { InvoiceStatus } from '../../types/index';
 
 type ViewMode = 'list' | 'cards' | 'kanban';
 
@@ -27,6 +28,12 @@ export const InvoicesPage: React.FC = () => {
   const [publicUrlModalOpen, setPublicUrlModalOpen] = useState(false);
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [emailForm, setEmailForm] = useState({ to: '', subject: '', message: '' });
+  // Status change modal state
+  const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [statusTarget, setStatusTarget] = useState<Invoice | null>(null);
+  const [newStatus, setNewStatus] = useState<InvoiceStatus>(InvoiceStatus.READY);
+  const [statusReason, setStatusReason] = useState('');
+  const [statusLoading, setStatusLoading] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -323,9 +330,15 @@ export const InvoicesPage: React.FC = () => {
   const getStatusColor = (status: string): 'default' | 'primary' | 'success' | 'warning' | 'danger' => {
     const colors: Record<string, 'default' | 'primary' | 'success' | 'warning' | 'danger'> = {
       DRAFT: 'default',
+      READY: 'primary',
       SENT: 'primary',
+      EXPIRED: 'warning',
       APPROVED: 'success',
       REFUSED: 'danger',
+      COMPLETED: 'success',
+      INVOICED: 'primary',
+      ABANDONED: 'danger',
+      DESISTED: 'danger',
     };
     return colors[status] || 'default';
   };
@@ -333,9 +346,15 @@ export const InvoicesPage: React.FC = () => {
   const getStatusEmoji = (status: string) => {
     const emojis: Record<string, string> = {
       DRAFT: '🟡',
+      READY: '🔵',
       SENT: '🔵',
+      EXPIRED: '🟠',
       APPROVED: '🟢',
       REFUSED: '🔴',
+      COMPLETED: '✅',
+      INVOICED: '📄',
+      ABANDONED: '⚪',
+      DESISTED: '⚪',
     };
     return emojis[status] || '⚪';
   };
@@ -343,11 +362,44 @@ export const InvoicesPage: React.FC = () => {
   const getStatusLabel = (status: string) => {
     const labels: Record<string, string> = {
       DRAFT: 'Rascunho',
+      READY: 'Pronto',
       SENT: 'Enviado',
+      EXPIRED: 'Vencido',
       APPROVED: 'Aprovado',
       REFUSED: 'Recusado',
+      COMPLETED: 'Concluído',
+      INVOICED: 'Faturado',
+      ABANDONED: 'Abandonado',
+      DESISTED: 'Desistido',
     };
     return labels[status] || status;
+  };
+
+  const needsReason = (status: InvoiceStatus) => [
+    InvoiceStatus.REFUSED,
+    InvoiceStatus.ABANDONED,
+    InvoiceStatus.DESISTED,
+  ].includes(status);
+
+  const openStatusModal = (invoice: Invoice) => {
+    setStatusTarget(invoice);
+    setNewStatus(invoice.status);
+    setStatusReason('');
+    setStatusModalOpen(true);
+  };
+
+  const handleChangeStatus = async () => {
+    if (!statusTarget) return;
+    try {
+      setStatusLoading(true);
+      await api.changeInvoiceStatus(statusTarget.id, newStatus, statusReason || undefined);
+      setStatusModalOpen(false);
+      await loadData();
+    } catch (error: any) {
+      alert(error?.response?.data?.message || 'Erro ao alterar status');
+    } finally {
+      setStatusLoading(false);
+    }
   };
 
   const columns = [
@@ -413,6 +465,13 @@ export const InvoicesPage: React.FC = () => {
               ))}
               <td className="px-6 py-4">
                 <div className="flex gap-1 flex-wrap">
+                  <button
+                    onClick={() => openStatusModal(invoice)}
+                    className="px-2 py-1.5 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 rounded-md text-xs font-medium transition"
+                    title="Alterar status"
+                  >
+                    ✅ Status
+                  </button>
                   <button
                     onClick={() => handleEdit(invoice)}
                     className="px-2 py-1.5 bg-green-50 hover:bg-green-100 text-green-700 rounded-md text-xs font-medium transition"
@@ -498,6 +557,13 @@ export const InvoicesPage: React.FC = () => {
               </div>
 
               <div className="flex gap-1 flex-wrap pt-2">
+                <button
+                  onClick={() => openStatusModal(invoice)}
+                  className="flex-1 px-2 py-1.5 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 rounded text-xs font-medium transition"
+                  title="Status"
+                >
+                  ✅
+                </button>
                 <button
                   onClick={() => handleEdit(invoice)}
                   className="flex-1 px-2 py-1.5 bg-green-50 hover:bg-green-100 text-green-700 rounded text-xs font-medium transition"
@@ -587,6 +653,12 @@ export const InvoicesPage: React.FC = () => {
                         R$ {(invoice.totalAmount || 0).toFixed(2)}
                       </p>
                       <div className="flex gap-1 pt-2">
+                        <button
+                          onClick={() => openStatusModal(invoice)}
+                          className="flex-1 px-2 py-1 bg-white hover:bg-gray-100 text-gray-700 rounded text-xs transition border border-gray-200"
+                        >
+                          ✅
+                        </button>
                         <button
                           onClick={() => handleEdit(invoice)}
                           className="flex-1 px-2 py-1 bg-white hover:bg-gray-100 text-gray-700 rounded text-xs transition border border-gray-200"
@@ -739,6 +811,52 @@ export const InvoicesPage: React.FC = () => {
               serviços ao orçamento.
             </span>
           </p>
+        </div>
+      </Modal>
+      
+      {/* Modal de Status */}
+      <Modal
+        isOpen={statusModalOpen}
+        title={`✅ Alterar Status ${statusTarget ? '- ' + (statusTarget.code || statusTarget.id.substring(0,8)) : ''}`}
+        onClose={() => setStatusModalOpen(false)}
+        actions={[
+          { label: 'Cancelar', onClick: () => setStatusModalOpen(false), variant: 'secondary' },
+          {
+            label: 'Alterar Status',
+            onClick: handleChangeStatus,
+            variant: 'primary',
+            loading: statusLoading,
+          },
+        ]}
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Novo Status</label>
+            <select
+              value={newStatus}
+              onChange={(e) => setNewStatus(e.target.value as InvoiceStatus)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {Object.values(InvoiceStatus).map((st) => (
+                <option key={st} value={st}>{getStatusLabel(st)}</option>
+              ))}
+            </select>
+          </div>
+
+          {needsReason(newStatus) && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Motivo <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={statusReason}
+                onChange={(e) => setStatusReason(e.target.value)}
+                rows={4}
+                placeholder="Descreva o motivo da mudança de status"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          )}
         </div>
       </Modal>
 
