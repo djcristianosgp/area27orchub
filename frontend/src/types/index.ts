@@ -189,17 +189,27 @@ export interface Invoice {
   clientId: string;
   status: InvoiceStatus;
   totalAmount: number;
-  subtotal: number;
+  finalAmount: number;
   discounts: number;
   additions: number;
   displacement: number;
+  
+  // Cabeçalho
+  proposalValidDate?: string | Date;
   origin?: string;
-  proposalValidDate?: string;
   observations?: string;
+  responsible?: string;
+  internalReference?: string;
+  
+  // URL Pública
   publicUrl: string;
+  publicUrlActive: boolean;
+  
+  // Resposta do cliente
   clientResponseStatus?: string;
   clientResponseReason?: string;
   clientResponseDate?: Date;
+  
   groups?: InvoiceGroup[];
   paymentConditions?: PaymentCondition[];
   client?: Client;

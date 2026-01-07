@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -114,6 +114,151 @@ async function main() {
 
   console.log(`\n👤 User ID: ${masterUser.id}`);
   console.log(`✅ Empresa vinculada ao usuário master!`);
+
+  console.log('\n📦 Criando dados demo (cliente, produto e serviço)...');
+
+  const [category, brand, group] = await Promise.all([
+    prisma.category.upsert({
+      where: { name: 'Demo Categoria' },
+      update: {},
+      create: {
+        name: 'Demo Categoria',
+        description: 'Categoria demo para produtos',
+      },
+    }),
+    prisma.brand.upsert({
+      where: { name: 'Demo Marca' },
+      update: {},
+      create: {
+        name: 'Demo Marca',
+        description: 'Marca demo para produtos',
+      },
+    }),
+    prisma.group.upsert({
+      where: { name: 'Demo Grupo' },
+      update: {},
+      create: {
+        name: 'Demo Grupo',
+        description: 'Grupo demo para produtos',
+      },
+    }),
+  ]);
+
+  let demoProduct = await prisma.product.findFirst({ where: { name: 'Produto Demo' } });
+  if (!demoProduct) {
+    demoProduct = await prisma.product.create({
+      data: {
+        name: 'Produto Demo',
+        description: 'Produto exemplo para orçamentos',
+        categoryId: category.id,
+        brandId: brand.id,
+        groupId: group.id,
+        image: 'https://via.placeholder.com/600x400?text=Produto+Demo',
+        variations: {
+          create: [
+            {
+              name: 'Variação Demo',
+              price: new Prisma.Decimal('50.00'),
+              affiliateLink: 'https://www.amazon.com.br/dp/EXEMPLO?tag=demo',
+              observation: 'Variação padrão de demonstração',
+            },
+          ],
+        },
+      },
+      include: { variations: true },
+    });
+    console.log('✅ Produto demo criado.');
+  } else {
+    const existingVariation = await prisma.productVariation.findFirst({
+      where: { productId: demoProduct.id, name: 'Variação Demo' },
+    });
+    if (!existingVariation) {
+      await prisma.productVariation.create({
+        data: {
+          name: 'Variação Demo',
+          price: new Prisma.Decimal('50.00'),
+          affiliateLink: 'https://www.amazon.com.br/dp/EXEMPLO?tag=demo',
+          observation: 'Variação padrão de demonstração',
+          productId: demoProduct.id,
+        },
+      });
+      console.log('🔄 Variação demo adicionada ao produto existente.');
+    } else {
+      console.log('ℹ️ Produto demo já existe com variação.');
+    }
+  }
+
+  let demoService = await prisma.service.findFirst({ where: { name: 'Serviço Demo' } });
+  if (!demoService) {
+    demoService = await prisma.service.create({
+      data: {
+        name: 'Serviço Demo',
+        description: 'Serviço exemplo para orçamentos',
+        variations: {
+          create: [
+            {
+              name: 'Variação Demo',
+              price: new Prisma.Decimal('50.00'),
+              observation: 'Variação padrão de demonstração',
+            },
+          ],
+        },
+      },
+      include: { variations: true },
+    });
+    console.log('✅ Serviço demo criado.');
+  } else {
+    const existingServiceVariation = await prisma.serviceVariation.findFirst({
+      where: { serviceId: demoService.id, name: 'Variação Demo' },
+    });
+    if (!existingServiceVariation) {
+      await prisma.serviceVariation.create({
+        data: {
+          name: 'Variação Demo',
+          price: new Prisma.Decimal('50.00'),
+          observation: 'Variação padrão de demonstração',
+          serviceId: demoService.id,
+        },
+      });
+      console.log('🔄 Variação demo adicionada ao serviço existente.');
+    } else {
+      console.log('ℹ️ Serviço demo já existe com variação.');
+    }
+  }
+
+  let demoClient = await prisma.client.findFirst({ where: { name: 'Cliente Demo' } });
+  if (!demoClient) {
+    demoClient = await prisma.client.create({
+      data: {
+        name: 'Cliente Demo',
+        nickname: 'Cliente Teste',
+        city: 'São Gabriel da Palha',
+        state: 'ES',
+        companyId: company.id,
+        observations: 'Cliente fictício para orçamentos demo',
+        clientEmails: {
+          create: [
+            {
+              email: 'cliente.demo@example.com',
+              primary: true,
+            },
+          ],
+        },
+        clientPhones: {
+          create: [
+            {
+              phone: '(27) 98888-7777',
+              hasWhatsapp: true,
+              primary: true,
+            },
+          ],
+        },
+      },
+    });
+    console.log('✅ Cliente demo criado.');
+  } else {
+    console.log('ℹ️ Cliente demo já existe.');
+  }
 }
 
 main()

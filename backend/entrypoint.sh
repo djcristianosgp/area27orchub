@@ -1,4 +1,5 @@
-#!/bin/sh
+﻿#!/bin/bash
+
 set -e
 
 echo "🚀 Iniciando OrchHub Backend..."
@@ -24,7 +25,6 @@ fi
 # Aplicar todas as migrations
 echo "📦 Aplicando migrations do Prisma..."
 npx prisma migrate deploy
-
 echo "✅ Migrations aplicadas com sucesso."
 
 # Gerar Prisma Client com schema atualizado
@@ -36,9 +36,12 @@ sleep 2
 
 # Executar seed com validações de existência
 echo "🌱 Executando seed do banco de dados..."
-npx ts-node prisma/seed.ts || {
-  echo "⚠️  Seed falhou, mas continuando (pode ser que dados já existam)"
+npm run seed 2>&1 | tee /tmp/seed.log || {
+  echo "⚠️  Seed falhou, verificando logs..."
+  cat /tmp/seed.log || true
+  echo "⚠️  Continuando mesmo com erro no seed (dados podem já existir)"
 }
+echo "✅ Seed concluído ou já existente."
 
 # Iniciar aplicação
 echo "✅ Iniciando aplicação..."

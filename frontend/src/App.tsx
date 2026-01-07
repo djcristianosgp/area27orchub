@@ -11,6 +11,7 @@ import {
   ProductsPage,
   ServicesPage,
   InvoicesPage,
+  InvoiceFormPage,
   CouponsPage,
   CategoriesPage,
   BrandsPage,
@@ -68,6 +69,22 @@ export function App() {
           element={
             <ProtectedRoute>
               <InvoicesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/invoices/new"
+          element={
+            <ProtectedRoute>
+              <InvoiceFormPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/invoices/:id/edit"
+          element={
+            <ProtectedRoute>
+              <InvoiceFormPage />
             </ProtectedRoute>
           }
         />

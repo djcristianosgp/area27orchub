@@ -18,13 +18,17 @@ ALTER TABLE "invoices" DROP COLUMN "status";
 ALTER TABLE "invoices" RENAME COLUMN "status_new" TO "status";
 
 -- Step 5: Alter the column to add proper constraint
-ALTER TABLE "invoices" ALTER COLUMN "status" TYPE VARCHAR(255) NOT NULL DEFAULT 'DRAFT';
+ALTER TABLE "invoices" ALTER COLUMN "status" SET NOT NULL;
 
 -- Step 6: Create new enum type
 CREATE TYPE "InvoiceStatus_new" AS ENUM('DRAFT', 'READY', 'EXPIRED', 'APPROVED', 'REFUSED', 'COMPLETED', 'INVOICED', 'ABANDONED', 'DESISTED');
 
--- Step 7: Cast the column to new enum type
+-- Step 7: Cast the column to new enum type (remove default before casting)
+ALTER TABLE "invoices" ALTER COLUMN "status" DROP DEFAULT;
 ALTER TABLE "invoices" ALTER COLUMN "status" TYPE "InvoiceStatus_new" USING "status"::"InvoiceStatus_new";
+
+-- Step 8: Re-add default after casting
+ALTER TABLE "invoices" ALTER COLUMN "status" SET DEFAULT 'DRAFT'::"InvoiceStatus_new";
 
 -- Step 8: Drop the old enum
 DROP TYPE "InvoiceStatus";

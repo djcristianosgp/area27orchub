@@ -1,6 +1,6 @@
 FROM node:18-alpine
 
-RUN apk add --no-cache openssl
+RUN apk add --no-cache openssl netcat-openbsd bash
 
 WORKDIR /app
 
@@ -16,4 +16,4 @@ RUN npm run build
 
 EXPOSE 3000
 
-ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["/app/entrypoint.sh"]

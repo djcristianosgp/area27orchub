@@ -209,6 +209,14 @@ class ApiClient {
     return this.client.post(`/invoices/${id}/status`, { status, reason });
   }
 
+  async regenerateInvoicePublicUrl(id: string) {
+    return this.client.post(`/invoices/${id}/regenerate-url`);
+  }
+
+  async toggleInvoicePublicUrl(id: string, active: boolean) {
+    return this.client.post(`/invoices/${id}/toggle-url`, { active });
+  }
+
   async deleteInvoice(id: string) {
     return this.client.delete(`/invoices/${id}`);
   }

@@ -11,3 +11,14 @@ export { StatCard } from './StatCard';
 export { EmptyState } from './EmptyState';
 export { InvoiceStatusBadge } from './InvoiceStatusBadge';
 export { InvoiceActionsMenu } from './InvoiceActionsMenu';
+
+// Novos componentes refatorados
+export { InvoiceStatusBadgeNew } from './InvoiceStatusBadgeNew';
+export { InvoiceActionsMenuNew } from './InvoiceActionsMenuNew';
+export { InvoiceCard } from './InvoiceCard';
+export { InvoiceKanban } from './InvoiceKanban';
+export { ViewModeSelector } from './ViewModeSelector';
+export type { ViewMode } from './ViewModeSelector';
+export { Tabs, TabPanel } from './Tabs';
+export type { Tab } from './Tabs';
+export { MultiSelect } from './MultiSelect';

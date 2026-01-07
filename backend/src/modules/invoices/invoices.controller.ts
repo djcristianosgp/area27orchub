@@ -9,43 +9,91 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  Put,
 } from '@nestjs/common';
 import { InvoicesService } from './invoices.service';
-import { CreateInvoiceDto, UpdateInvoiceDto } from './dtos/invoice.dto';
+import { 
+  CreateInvoiceDto, 
+  UpdateInvoiceDto,
+  ChangeInvoiceStatusDto,
+  CloneInvoiceDto,
+  ClientResponseDto,
+  InvoiceStatusEnum,
+} from './dtos/invoice.dto';
 
 @Controller('invoices')
 export class InvoicesController {
   constructor(private invoicesService: InvoicesService) {}
 
-  // Public endpoints - MUST come before parameterized routes
+  // ========== ENDPOINTS PÚBLICOS ==========
+  // DEVEM vir ANTES dos endpoints parametrizados para evitar conflitos
+
+  /**
+   * Busca orçamento pela URL pública
+   * GET /invoices/public/:publicUrl
+   */
   @Get('public/:publicUrl')
+  @HttpCode(HttpStatus.OK)
   findByPublicUrl(@Param('publicUrl') publicUrl: string) {
     return this.invoicesService.findByPublicUrl(publicUrl);
   }
 
+  /**
+   * Cliente aprova o orçamento via URL pública
+   * POST /invoices/public/:publicUrl/approve
+   */
   @Post('public/:publicUrl/approve')
   @HttpCode(HttpStatus.OK)
   approveInvoice(@Param('publicUrl') publicUrl: string) {
     return this.invoicesService.approveInvoice(publicUrl);
   }
 
+  /**
+   * Cliente recusa o orçamento via URL pública
+   * POST /invoices/public/:publicUrl/refuse
+   * Body: { reason: string }
+   */
   @Post('public/:publicUrl/refuse')
   @HttpCode(HttpStatus.OK)
   refuseInvoice(
     @Param('publicUrl') publicUrl: string,
-    @Body() body?: { reason?: string },
+    @Body() body: ClientResponseDto,
   ) {
-    return this.invoicesService.refuseInvoice(publicUrl, body?.reason);
+    return this.invoicesService.refuseInvoice(publicUrl, body.reason);
   }
 
-  // Admin CRUD endpoints
+  /**
+   * Cliente abandona o orçamento via URL pública
+   * POST /invoices/public/:publicUrl/abandon
+   * Body: { reason: string }
+   */
+  @Post('public/:publicUrl/abandon')
+  @HttpCode(HttpStatus.OK)
+  abandonInvoice(
+    @Param('publicUrl') publicUrl: string,
+    @Body() body: ClientResponseDto,
+  ) {
+    return this.invoicesService.abandonInvoice(publicUrl, body.reason);
+  }
+
+  // ========== ENDPOINTS ADMINISTRATIVOS (CRUD) ==========
+
+  /**
+   * Cria um novo orçamento
+   * POST /invoices
+   */
   @Post()
   @HttpCode(HttpStatus.CREATED)
   create(@Body() createInvoiceDto: CreateInvoiceDto) {
     return this.invoicesService.create(createInvoiceDto);
   }
 
+  /**
+   * Lista todos os orçamentos com filtros
+   * GET /invoices?clientId=xxx&status=DRAFT&productId=xxx&serviceId=xxx&search=termo
+   */
   @Get()
+  @HttpCode(HttpStatus.OK)
   findAll(
     @Query('clientId') clientId?: string,
     @Query('status') status?: string,
@@ -62,12 +110,22 @@ export class InvoicesController {
     });
   }
 
+  /**
+   * Busca um orçamento por ID
+   * GET /invoices/:id
+   */
   @Get(':id')
+  @HttpCode(HttpStatus.OK)
   findOne(@Param('id') id: string) {
     return this.invoicesService.findOne(id);
   }
 
+  /**
+   * Atualiza um orçamento
+   * PATCH /invoices/:id
+   */
   @Patch(':id')
+  @HttpCode(HttpStatus.OK)
   update(
     @Param('id') id: string,
     @Body() updateInvoiceDto: UpdateInvoiceDto,
@@ -75,6 +133,23 @@ export class InvoicesController {
     return this.invoicesService.update(id, updateInvoiceDto);
   }
 
+  /**
+   * Atualização completa do orçamento
+   * PUT /invoices/:id
+   */
+  @Put(':id')
+  @HttpCode(HttpStatus.OK)
+  updateFull(
+    @Param('id') id: string,
+    @Body() updateInvoiceDto: UpdateInvoiceDto,
+  ) {
+    return this.invoicesService.update(id, updateInvoiceDto);
+  }
+
+  /**
+   * Clona um orçamento
+   * POST /invoices/:id/clone?updatePrices=true|false
+   */
   @Post(':id/clone')
   @HttpCode(HttpStatus.CREATED)
   clone(
@@ -84,27 +159,87 @@ export class InvoicesController {
     return this.invoicesService.clone(id, updatePrices === 'true');
   }
 
+  /**
+   * Altera o status de um orçamento
+   * POST /invoices/:id/status
+   * Body: { status: 'DRAFT' | 'READY' | ..., reason?: string }
+   */
   @Post(':id/status')
   @HttpCode(HttpStatus.OK)
   changeStatus(
     @Param('id') id: string,
-    @Body() body: { status: string; reason?: string },
+    @Body() body: { status: InvoiceStatusEnum; reason?: string },
   ) {
     return this.invoicesService.changeStatus(id, body.status, body.reason);
   }
 
+  /**
+   * Marca orçamento como Desistido
+   * POST /invoices/:id/desist
+   * Body: { reason?: string }
+   */
+  @Post(':id/desist')
+  @HttpCode(HttpStatus.OK)
+  desistInvoice(
+    @Param('id') id: string,
+    @Body() body?: { reason?: string },
+  ) {
+    return this.invoicesService.changeStatus(
+      id, 
+      InvoiceStatusEnum.DESISTED, 
+      body?.reason
+    );
+  }
+
+  /**
+   * Marca orçamento como Abandonado
+   * POST /invoices/:id/abandon-admin
+   * Body: { reason?: string }
+   */
+  @Post(':id/abandon-admin')
+  @HttpCode(HttpStatus.OK)
+  abandonInvoiceAdmin(
+    @Param('id') id: string,
+    @Body() body?: { reason?: string },
+  ) {
+    return this.invoicesService.changeStatus(
+      id, 
+      InvoiceStatusEnum.ABANDONED, 
+      body?.reason
+    );
+  }
+
+  /**
+   * Regenera a URL pública do orçamento
+   * POST /invoices/:id/regenerate-url
+   */
+  @Post(':id/regenerate-url')
+  @HttpCode(HttpStatus.OK)
+  regeneratePublicUrl(@Param('id') id: string) {
+    return this.invoicesService.regeneratePublicUrl(id);
+  }
+
+  /**
+   * Ativa/desativa a URL pública
+   * POST /invoices/:id/toggle-url
+   * Body: { active: boolean }
+   */
+  @Post(':id/toggle-url')
+  @HttpCode(HttpStatus.OK)
+  togglePublicUrl(
+    @Param('id') id: string,
+    @Body() body: { active: boolean },
+  ) {
+    return this.invoicesService.togglePublicUrl(id, body.active);
+  }
+
+  /**
+   * Deleta um orçamento
+   * DELETE /invoices/:id
+   */
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   delete(@Param('id') id: string) {
     return this.invoicesService.delete(id);
-  }
-
-  @Post('public/:publicUrl/abandon')
-  @HttpCode(HttpStatus.OK)
-  abandonInvoice(
-    @Param('publicUrl') publicUrl: string,
-    @Body() body?: { reason?: string },
-  ) {
-    return this.invoicesService.abandonInvoice(publicUrl, body?.reason);
   }
 }

@@ -1,27 +1,49 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@database/prisma.service';
-import { CreateInvoiceDto, UpdateInvoiceDto } from './dtos/invoice.dto';
+import { 
+  CreateInvoiceDto, 
+  UpdateInvoiceDto, 
+  InvoiceStatusEnum,
+  ChangeInvoiceStatusDto,
+  CloneInvoiceDto,
+  ClientResponseDto,
+} from './dtos/invoice.dto';
 import { randomUUID } from 'crypto';
+import { Decimal } from '@prisma/client/runtime/library';
 
 @Injectable()
 export class InvoicesService {
   constructor(private prisma: PrismaService) {}
 
+  /**
+   * Normaliza valores monetários para number
+   */
   private normalizePrice(price: any): number {
+    if (price === null || price === undefined) return 0;
     if (typeof price === 'string') {
       return parseFloat(price);
+    }
+    if (price instanceof Decimal) {
+      return price.toNumber();
     }
     return Number(price);
   }
 
+  /**
+   * Normaliza item do orçamento
+   */
   private normalizeItem(item: any) {
     return {
       ...item,
       unitPrice: this.normalizePrice(item.unitPrice),
       totalPrice: this.normalizePrice(item.totalPrice),
+      customPrice: item.customPrice ? this.normalizePrice(item.customPrice) : null,
     };
   }
 
+  /**
+   * Normaliza grupo de itens
+   */
   private normalizeGroup(group: any) {
     return {
       ...group,
@@ -29,7 +51,12 @@ export class InvoicesService {
     };
   }
 
+  /**
+   * Normaliza invoice completo
+   */
   private normalizeInvoice(invoice: any) {
+    if (!invoice) return null;
+
     // Map DB-mapped fields to API contract expected by frontend
     const responseStatus = invoice.clientResponseStatus ?? invoice.responseStatus;
     const responseDate = invoice.clientResponseDate ?? invoice.responseDate;
@@ -44,6 +71,7 @@ export class InvoicesService {
       client = {
         id: client.id,
         name: client.name,
+        nickname: client.nickname,
         email: primaryEmail?.email,
         phone: primaryPhone?.phone,
       };
@@ -53,67 +81,179 @@ export class InvoicesService {
       ...invoice,
       client,
       totalAmount: this.normalizePrice(invoice.totalAmount),
+      finalAmount: this.normalizePrice(invoice.finalAmount),
+      discounts: this.normalizePrice(invoice.discounts),
+      additions: this.normalizePrice(invoice.additions),
+      displacement: this.normalizePrice(invoice.displacement),
       responseStatus,
       responseDate,
+      clientResponseReason: invoice.clientResponseReason,
       groups: invoice.groups?.map((group: any) => this.normalizeGroup(group)) || [],
+      paymentConditions: invoice.paymentConditions?.map((pc: any) => ({
+        ...pc,
+        interestRate: this.normalizePrice(pc.interestRate),
+      })) || [],
     };
   }
 
-  async create(createInvoiceDto: CreateInvoiceDto) {
-    const publicUrl = randomUUID();
+  /**
+   * Calcula o total do orçamento
+   */
+  private async calculateTotal(invoiceId: string) {
+    const invoice = await this.prisma.invoice.findUnique({
+      where: { id: invoiceId },
+      include: {
+        items: true,
+      },
+    });
 
-    // Generate unique invoice code
+    if (!invoice) return;
+
+    // Soma todos os itens
+    const itemsTotal = invoice.items.reduce(
+      (sum, item) => sum + this.normalizePrice(item.totalPrice), 
+      0
+    );
+
+    // Calcula o valor final
+    const discounts = this.normalizePrice(invoice.discounts);
+    const additions = this.normalizePrice(invoice.additions);
+    const displacement = this.normalizePrice(invoice.displacement);
+    
+    const finalAmount = itemsTotal - discounts + additions + displacement;
+
+    await this.prisma.invoice.update({
+      where: { id: invoiceId },
+      data: { 
+        totalAmount: itemsTotal,
+        finalAmount: Math.max(0, finalAmount), // Não permite valor negativo
+      },
+    });
+  }
+
+  /**
+   * Gera código único para o orçamento
+   */
+  private async generateInvoiceCode(): Promise<string> {
     const lastInvoice = await this.prisma.invoice.findFirst({
       orderBy: { createdAt: 'desc' },
     });
+    
     const nextNumber = lastInvoice ? parseInt(lastInvoice.code.split('-')[1]) + 1 : 1;
-    const code = `ORC-${String(nextNumber).padStart(6, '0')}`;
+    return `ORC-${String(nextNumber).padStart(6, '0')}`;
+  }
+
+  /**
+   * Valida se o orçamento pode ser acessado pela URL pública
+   */
+  private async validatePublicAccess(invoice: any): Promise<boolean> {
+    if (!invoice.publicUrlActive) return false;
+
+    // Sempre pode acessar se estiver aprovado, concluído ou faturado
+    if (['APPROVED', 'COMPLETED', 'INVOICED'].includes(invoice.status)) {
+      return true;
+    }
+
+    // Se tiver data de validade, verifica
+    if (invoice.proposalValidDate) {
+      const now = new Date();
+      const validDate = new Date(invoice.proposalValidDate);
+      
+      if (now > validDate) {
+        // Marca como vencido se necessário
+        if (invoice.status === 'READY' || invoice.status === 'DRAFT') {
+          await this.prisma.invoice.update({
+            where: { id: invoice.id },
+            data: { status: 'EXPIRED' },
+          });
+        }
+        return false;
+      }
+    }
+
+    // Permite acesso para rascunho ou pronto dentro da validade
+    return ['DRAFT', 'READY'].includes(invoice.status);
+  }
+
+  /**
+   * Cria um novo orçamento
+   */
+  async create(createInvoiceDto: CreateInvoiceDto) {
+    const publicUrl = randomUUID();
+    const code = await this.generateInvoiceCode();
 
     const invoice = await this.prisma.invoice.create({
       data: {
         code,
         clientId: createInvoiceDto.clientId,
         publicUrl,
+        proposalValidDate: createInvoiceDto.proposalValidDate 
+          ? new Date(createInvoiceDto.proposalValidDate) 
+          : null,
+        origin: createInvoiceDto.origin,
+        observations: createInvoiceDto.observations,
+        responsible: createInvoiceDto.responsible,
+        internalReference: createInvoiceDto.internalReference,
+        discounts: createInvoiceDto.discounts || 0,
+        additions: createInvoiceDto.additions || 0,
+        displacement: createInvoiceDto.displacement || 0,
       },
     });
 
-    // Create groups and items sequentially to satisfy required relations
-    for (const group of createInvoiceDto.groups) {
-      const createdGroup = await this.prisma.invoiceGroup.create({
-        data: {
-          name: group.name,
-          type: group.type as any,
-          invoiceId: invoice.id,
-        },
-      });
-
-      if (group.items && group.items.length > 0) {
-        await this.prisma.invoiceItem.createMany({
-          data: group.items.map((item) => ({
+    // Cria grupos e itens
+    if (createInvoiceDto.groups && createInvoiceDto.groups.length > 0) {
+      for (const group of createInvoiceDto.groups) {
+        const createdGroup = await this.prisma.invoiceGroup.create({
+          data: {
+            name: group.name,
+            type: group.type as any,
             invoiceId: invoice.id,
-            invoiceGroupId: createdGroup.id,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice as any,
-            totalPrice: (item.unitPrice as any) * item.quantity,
-            productId: item.productId,
-            serviceId: item.serviceId,
-            productVariationId: item.productVariationId,
-            serviceVariationId: item.serviceVariationId,
-          })),
+          },
         });
+
+        if (group.items && group.items.length > 0) {
+          await this.prisma.invoiceItem.createMany({
+            data: group.items.map((item) => ({
+              invoiceId: invoice.id,
+              invoiceGroupId: createdGroup.id,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice as any,
+              totalPrice: (item.unitPrice as any) * item.quantity,
+              customName: item.customName,
+              customDescription: item.customDescription,
+              customPrice: item.customPrice as any,
+              productId: item.productId,
+              serviceId: item.serviceId,
+              productVariationId: item.productVariationId,
+              serviceVariationId: item.serviceVariationId,
+            })),
+          });
+        }
       }
     }
 
-    // Fix invoiceId in items (workaround for nested create)
-    // Items already created with invoiceId; no post-fix needed
+    // Cria condições de pagamento
+    if (createInvoiceDto.paymentConditions && createInvoiceDto.paymentConditions.length > 0) {
+      await this.prisma.paymentCondition.createMany({
+        data: createInvoiceDto.paymentConditions.map((pc) => ({
+          invoiceId: invoice.id,
+          type: pc.type as any,
+          description: pc.description,
+          numberOfInstallments: pc.numberOfInstallments,
+          interestRate: pc.interestRate || 0,
+        })),
+      });
+    }
 
-    // Calculate total
-    await this.updateTotal(invoice.id);
+    // Calcula o total
+    await this.calculateTotal(invoice.id);
 
-    const result = await this.findOne(invoice.id);
-    return result ? this.normalizeInvoice(result) : null;
+    return this.findOne(invoice.id);
   }
 
+  /**
+   * Lista todos os orçamentos com filtros
+   */
   async findAll(filters?: {
     clientId?: string;
     status?: string;
@@ -156,6 +296,7 @@ export class InvoicesService {
           select: {
             id: true,
             name: true,
+            nickname: true,
           },
         },
         groups: {
@@ -163,6 +304,7 @@ export class InvoicesService {
             items: true,
           },
         },
+        paymentConditions: true,
       },
       orderBy: {
         createdAt: 'desc',
@@ -172,6 +314,9 @@ export class InvoicesService {
     return results.map(invoice => this.normalizeInvoice(invoice));
   }
 
+  /**
+   * Busca um orçamento por ID
+   */
   async findOne(id: string) {
     const result = await this.prisma.invoice.findUnique({
       where: { id },
@@ -186,18 +331,37 @@ export class InvoicesService {
           include: {
             items: {
               include: {
-                product: true,
-                service: true,
+                product: {
+                  include: {
+                    category: true,
+                    brand: true,
+                    group: true,
+                    variations: true,
+                  },
+                },
+                service: {
+                  include: {
+                    variations: true,
+                  },
+                },
               },
             },
           },
         },
+        paymentConditions: true,
       },
     });
 
-    return result ? this.normalizeInvoice(result) : null;
+    if (!result) {
+      throw new NotFoundException('Orçamento não encontrado');
+    }
+
+    return this.normalizeInvoice(result);
   }
 
+  /**
+   * Busca um orçamento pela URL pública
+   */
   async findByPublicUrl(publicUrl: string) {
     const result = await this.prisma.invoice.findUnique({
       where: { publicUrl },
@@ -212,64 +376,159 @@ export class InvoicesService {
           include: {
             items: {
               include: {
-                product: true,
+                product: {
+                  include: {
+                    category: true,
+                    brand: true,
+                    group: true,
+                  },
+                },
                 service: true,
               },
             },
           },
         },
+        paymentConditions: true,
       },
     });
 
-    return result ? this.normalizeInvoice(result) : null;
-  }
-
-  async update(id: string, updateInvoiceDto: UpdateInvoiceDto) {
-    // Check if invoice is approved - if so, cannot be edited
-    const invoice = await this.findOne(id);
-    if (!invoice || invoice.status === 'APPROVED') {
-      throw new Error('Approved invoices cannot be edited');
+    if (!result) {
+      throw new NotFoundException('Orçamento não encontrado');
     }
 
-    const updated = await this.prisma.invoice.update({
+    // Valida se pode acessar
+    const canAccess = await this.validatePublicAccess(result);
+    
+    if (!canAccess) {
+      throw new BadRequestException('Este orçamento não está mais disponível');
+    }
+
+    return this.normalizeInvoice(result);
+  }
+
+  /**
+   * Atualiza um orçamento
+   */
+  async update(id: string, updateInvoiceDto: UpdateInvoiceDto) {
+    const invoice = await this.prisma.invoice.findUnique({ where: { id } });
+    
+    if (!invoice) {
+      throw new NotFoundException('Orçamento não encontrado');
+    }
+
+    // Orçamentos aprovados não podem ser editados
+    if (invoice.status === 'APPROVED') {
+      throw new BadRequestException('Orçamentos aprovados não podem ser editados');
+    }
+
+    const updateData: any = {
+      status: updateInvoiceDto.status,
+      proposalValidDate: updateInvoiceDto.proposalValidDate 
+        ? new Date(updateInvoiceDto.proposalValidDate) 
+        : undefined,
+      origin: updateInvoiceDto.origin,
+      observations: updateInvoiceDto.observations,
+      responsible: updateInvoiceDto.responsible,
+      internalReference: updateInvoiceDto.internalReference,
+      discounts: updateInvoiceDto.discounts,
+      additions: updateInvoiceDto.additions,
+      displacement: updateInvoiceDto.displacement,
+    };
+
+    // Remove undefined values
+    Object.keys(updateData).forEach(key => 
+      updateData[key] === undefined && delete updateData[key]
+    );
+
+    await this.prisma.invoice.update({
       where: { id },
-      data: {
-        status: updateInvoiceDto.status,
-      },
-      include: {
-        groups: {
-          include: {
-            items: true,
-          },
-        },
-      },
+      data: updateData,
     });
+
+    // Atualiza grupos se fornecidos
+    if (updateInvoiceDto.groups) {
+      // Remove grupos antigos
+      await this.prisma.invoiceGroup.deleteMany({ where: { invoiceId: id } });
+
+      // Cria novos grupos
+      for (const group of updateInvoiceDto.groups) {
+        const createdGroup = await this.prisma.invoiceGroup.create({
+          data: {
+            name: group.name,
+            type: group.type as any,
+            invoiceId: id,
+          },
+        });
+
+        if (group.items && group.items.length > 0) {
+          await this.prisma.invoiceItem.createMany({
+            data: group.items.map((item) => ({
+              invoiceId: id,
+              invoiceGroupId: createdGroup.id,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice as any,
+              totalPrice: (item.unitPrice as any) * item.quantity,
+              customName: item.customName,
+              customDescription: item.customDescription,
+              customPrice: item.customPrice as any,
+              productId: item.productId,
+              serviceId: item.serviceId,
+              productVariationId: item.productVariationId,
+              serviceVariationId: item.serviceVariationId,
+            })),
+          });
+        }
+      }
+    }
+
+    // Atualiza condições de pagamento se fornecidas
+    if (updateInvoiceDto.paymentConditions) {
+      await this.prisma.paymentCondition.deleteMany({ where: { invoiceId: id } });
+      
+      await this.prisma.paymentCondition.createMany({
+        data: updateInvoiceDto.paymentConditions.map((pc) => ({
+          invoiceId: id,
+          type: pc.type as any,
+          description: pc.description,
+          numberOfInstallments: pc.numberOfInstallments,
+          interestRate: pc.interestRate || 0,
+        })),
+      });
+    }
+
+    // Recalcula o total
+    await this.calculateTotal(id);
 
     return this.findOne(id);
   }
 
+  /**
+   * Clona um orçamento
+   */
   async clone(id: string, updatePrices: boolean = false) {
     const invoice = await this.findOne(id);
 
     if (!invoice) {
-      throw new Error('Invoice not found');
+      throw new NotFoundException('Orçamento não encontrado');
     }
 
-    // If updatePrices is true, fetch current prices from products/services
+    // Se updatePrices é true, busca preços atuais dos produtos/serviços
     const groups = await Promise.all(
       invoice.groups.map(async (group: any) => {
         const items = await Promise.all(
           group.items.map(async (item: any) => {
             let unitPrice = this.normalizePrice(item.unitPrice);
+            let customPrice = item.customPrice ? this.normalizePrice(item.customPrice) : undefined;
 
             if (updatePrices) {
-              // Fetch current price from product or service
+              // Busca preço atual da variação
               if (item.productVariationId) {
                 const variation = await this.prisma.productVariation.findUnique({
                   where: { id: item.productVariationId },
                 });
                 if (variation) {
                   unitPrice = this.normalizePrice(variation.price);
+                  customPrice = undefined; // Remove customização ao atualizar preços
                 }
               } else if (item.serviceVariationId) {
                 const variation = await this.prisma.serviceVariation.findUnique({
@@ -277,6 +536,7 @@ export class InvoicesService {
                 });
                 if (variation) {
                   unitPrice = this.normalizePrice(variation.price);
+                  customPrice = undefined;
                 }
               }
             }
@@ -284,6 +544,9 @@ export class InvoicesService {
             return {
               quantity: item.quantity,
               unitPrice,
+              customName: updatePrices ? undefined : item.customName,
+              customDescription: updatePrices ? undefined : item.customDescription,
+              customPrice,
               productId: item.productId,
               serviceId: item.serviceId,
               productVariationId: item.productVariationId,
@@ -300,52 +563,77 @@ export class InvoicesService {
       })
     );
 
+    // Clona condições de pagamento
+    const paymentConditions = invoice.paymentConditions?.map((pc: any) => ({
+      type: pc.type,
+      description: pc.description,
+      numberOfInstallments: pc.numberOfInstallments,
+      interestRate: this.normalizePrice(pc.interestRate),
+    }));
+
     return this.create({
       clientId: invoice.clientId,
+      proposalValidDate: invoice.proposalValidDate,
       origin: invoice.origin,
       observations: invoice.observations,
+      responsible: invoice.responsible,
+      internalReference: invoice.internalReference,
       discounts: this.normalizePrice(invoice.discounts || 0),
       additions: this.normalizePrice(invoice.additions || 0),
       displacement: this.normalizePrice(invoice.displacement || 0),
       groups: groups as any,
+      paymentConditions: paymentConditions as any,
     });
   }
 
-  async changeStatus(id: string, status: string, reason?: string) {
-    const invoice = await this.findOne(id);
+  /**
+   * Altera o status de um orçamento
+   */
+  async changeStatus(id: string, status: InvoiceStatusEnum, reason?: string) {
+    const invoice = await this.prisma.invoice.findUnique({ where: { id } });
     
     if (!invoice) {
-      throw new Error('Invoice not found');
+      throw new NotFoundException('Orçamento não encontrado');
     }
 
-    // Validate status is a valid enum value
-    const validStatuses = ['DRAFT', 'READY', 'EXPIRED', 'APPROVED', 'REFUSED', 'COMPLETED', 'INVOICED', 'ABANDONED', 'DESISTED'];
-    if (!validStatuses.includes(status)) {
-      throw new Error(`Invalid status: ${status}. Valid values are: ${validStatuses.join(', ')}`);
-    }
-
-    // Check if status transition is valid
+    // Valida transição de status
     if (invoice.status === 'APPROVED' && !['COMPLETED', 'INVOICED'].includes(status)) {
-      throw new Error('Approved invoices can only be marked as COMPLETED or INVOICED');
+      throw new BadRequestException('Orçamentos aprovados só podem ser marcados como Concluído ou Faturado');
     }
 
-    const data: any = { status };
-    if (['ABANDONED', 'DESISTED', 'REFUSED'].includes(status)) {
-      data.clientResponseStatus = status;
-      data.clientResponseDate = new Date();
+    const updateData: any = { status };
+    
+    if (['ABANDONED', 'DESISTED', 'REFUSED'].includes(status) && reason) {
+      updateData.clientResponseReason = reason;
+      updateData.clientResponseDate = new Date();
+      updateData.clientResponseStatus = status;
     }
 
     const result = await this.prisma.invoice.update({
       where: { id },
-      data: {
-        status: status as any,
-      },
+      data: updateData,
     });
 
     return this.normalizeInvoice(result);
   }
 
+  /**
+   * Cliente aprova o orçamento via URL pública
+   */
   async approveInvoice(publicUrl: string) {
+    const invoice = await this.prisma.invoice.findUnique({
+      where: { publicUrl },
+    });
+
+    if (!invoice) {
+      throw new NotFoundException('Orçamento não encontrado');
+    }
+
+    const canAccess = await this.validatePublicAccess(invoice);
+    if (!canAccess) {
+      throw new BadRequestException('Este orçamento não está mais disponível');
+    }
+
     const result = await this.prisma.invoice.update({
       where: { publicUrl },
       data: {
@@ -358,53 +646,124 @@ export class InvoicesService {
     return this.normalizeInvoice(result);
   }
 
+  /**
+   * Cliente recusa o orçamento via URL pública
+   */
   async refuseInvoice(publicUrl: string, reason?: string) {
+    const invoice = await this.prisma.invoice.findUnique({
+      where: { publicUrl },
+    });
+
+    if (!invoice) {
+      throw new NotFoundException('Orçamento não encontrado');
+    }
+
+    if (!reason) {
+      throw new BadRequestException('Justificativa é obrigatória para recusar o orçamento');
+    }
+
     const result = await this.prisma.invoice.update({
       where: { publicUrl },
       data: {
         status: 'REFUSED',
         clientResponseStatus: 'REFUSED',
         clientResponseDate: new Date(),
+        clientResponseReason: reason,
       },
     });
     
     return this.normalizeInvoice(result);
   }
 
+  /**
+   * Cliente abandona o orçamento via URL pública
+   */
   async abandonInvoice(publicUrl: string, reason?: string) {
+    const invoice = await this.prisma.invoice.findUnique({
+      where: { publicUrl },
+    });
+
+    if (!invoice) {
+      throw new NotFoundException('Orçamento não encontrado');
+    }
+
+    if (!reason) {
+      throw new BadRequestException('Justificativa é obrigatória para abandonar o orçamento');
+    }
+
     const result = await this.prisma.invoice.update({
       where: { publicUrl },
       data: {
         status: 'ABANDONED',
         clientResponseStatus: 'ABANDONED',
         clientResponseDate: new Date(),
+        clientResponseReason: reason,
       },
     });
     
     return this.normalizeInvoice(result);
   }
 
+  /**
+   * Deleta um orçamento
+   */
   async delete(id: string) {
-    return this.prisma.invoice.delete({
+    const invoice = await this.prisma.invoice.findUnique({ where: { id } });
+    
+    if (!invoice) {
+      throw new NotFoundException('Orçamento não encontrado');
+    }
+
+    // Não permite deletar orçamentos aprovados
+    if (invoice.status === 'APPROVED') {
+      throw new BadRequestException('Orçamentos aprovados não podem ser deletados');
+    }
+
+    await this.prisma.invoice.delete({
       where: { id },
     });
+
+    return { message: 'Orçamento deletado com sucesso' };
   }
 
-  private async updateTotal(invoiceId: string) {
-    const invoice = await this.prisma.invoice.findUnique({
-      where: { id: invoiceId },
-      include: {
-        items: true,
+  /**
+   * Gera uma nova URL pública para o orçamento
+   */
+  async regeneratePublicUrl(id: string) {
+    const invoice = await this.prisma.invoice.findUnique({ where: { id } });
+    
+    if (!invoice) {
+      throw new NotFoundException('Orçamento não encontrado');
+    }
+
+    const publicUrl = randomUUID();
+
+    await this.prisma.invoice.update({
+      where: { id },
+      data: { 
+        publicUrl,
+        publicUrlActive: true,
       },
     });
 
-    if (!invoice) return;
+    return this.findOne(id);
+  }
 
-    const total = invoice.items.reduce((sum, item) => sum + Number(item.totalPrice), 0);
+  /**
+   * Ativa/desativa a URL pública
+   */
+  async togglePublicUrl(id: string, active: boolean) {
+    const invoice = await this.prisma.invoice.findUnique({ where: { id } });
+    
+    if (!invoice) {
+      throw new NotFoundException('Orçamento não encontrado');
+    }
 
-    return this.prisma.invoice.update({
-      where: { id: invoiceId },
-      data: { totalAmount: total },
+    await this.prisma.invoice.update({
+      where: { id },
+      data: { publicUrlActive: active },
     });
+
+    return this.findOne(id);
   }
 }

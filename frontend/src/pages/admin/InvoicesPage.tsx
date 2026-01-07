@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AdminLayout, Table, Modal, FormField, SelectField, Button, PageHeader, Card, CardBody, Badge, EmptyState } from '@components/index';
 import api from '@services/api';
-import { Invoice, Client, Product, Service } from '@types/index';
+import type { Invoice, Client, Product, Service } from '../../types/index';
+
+type ViewMode = 'list' | 'cards' | 'kanban';
 
 export const InvoicesPage: React.FC = () => {
+  const navigate = useNavigate();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -19,6 +23,10 @@ export const InvoicesPage: React.FC = () => {
   const [editGroups, setEditGroups] = useState<any[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitLoading, setSubmitLoading] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [publicUrlModalOpen, setPublicUrlModalOpen] = useState(false);
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [emailForm, setEmailForm] = useState({ to: '', subject: '', message: '' });
 
   useEffect(() => {
     loadData();
@@ -52,9 +60,7 @@ export const InvoicesPage: React.FC = () => {
   };
 
   const handleNew = () => {
-    setFormData({ clientId: '' });
-    setErrors({});
-    setModalOpen(true);
+    navigate('/admin/invoices/new');
   };
 
   const handleCreate = async () => {
@@ -102,10 +108,72 @@ export const InvoicesPage: React.FC = () => {
     }
   };
 
-  const handleEdit = (invoice: Invoice) => {
+  const handleGeneratePublicUrl = async (invoice: Invoice) => {
+    try {
+      if (!invoice.publicUrl) {
+        await api.regenerateInvoicePublicUrl(invoice.id);
+        await loadData();
+      }
+      setSelectedInvoice(invoice);
+      setPublicUrlModalOpen(true);
+    } catch (error) {
+      console.error('Erro ao gerar URL pública:', error);
+    }
+  };
+
+  const handleTogglePublicUrl = async () => {
+    if (!selectedInvoice) return;
+    try {
+      await api.toggleInvoicePublicUrl(selectedInvoice.id, !selectedInvoice.publicUrlActive);
+      await loadData();
+      setPublicUrlModalOpen(false);
+    } catch (error) {
+      console.error('Erro ao alternar URL pública:', error);
+    }
+  };
+
+  const handleCopyPublicUrl = () => {
+    if (!selectedInvoice?.publicUrl) return;
+    const url = `${window.location.origin}/public/invoice/${selectedInvoice.publicUrl}`;
+    navigator.clipboard.writeText(url);
+    alert('Link copiado para a área de transferência!');
+  };
+
+  const handleExportPDF = async (invoice: Invoice) => {
+    try {
+      // TODO: Implementar exportação PDF
+      alert('Funcionalidade de exportar PDF em desenvolvimento');
+    } catch (error) {
+      console.error('Erro ao exportar PDF:', error);
+    }
+  };
+
+  const handleSendEmail = (invoice: Invoice) => {
+    const client = clients.find(c => c.id === invoice.clientId);
     setSelectedInvoice(invoice);
-    setEditGroups(invoice.groups || []);
-    setEditModalOpen(true);
+    setEmailForm({
+      to: client?.clientEmails?.[0]?.email || '',
+      subject: `Orçamento ${invoice.code || invoice.id.substring(0, 8)}`,
+      message: `Olá ${client?.name},\n\nSegue o link do seu orçamento:\n${window.location.origin}/public/invoice/${invoice.publicUrl}\n\nAtenciosamente,\nEquipe`,
+    });
+    setEmailModalOpen(true);
+  };
+
+  const handleSendEmailSubmit = async () => {
+    try {
+      setSubmitLoading(true);
+      // TODO: Implementar envio de email via backend
+      alert('Email enviado com sucesso! (simulado)');
+      setEmailModalOpen(false);
+    } catch (error) {
+      console.error('Erro ao enviar email:', error);
+    } finally {
+      setSubmitLoading(false);
+    }
+  };
+
+  const handleEdit = (invoice: Invoice) => {
+    navigate(`/admin/invoices/${invoice.id}/edit`);
   };
 
   const handleAddGroup = () => {
@@ -113,6 +181,7 @@ export const InvoicesPage: React.FC = () => {
       ...editGroups,
       {
         name: '',
+        type: 'PRODUCT', // Tipo padrão
         productItems: [],
         serviceItems: [],
       },
@@ -188,8 +257,58 @@ export const InvoicesPage: React.FC = () => {
 
     try {
       setSubmitLoading(true);
+      
+      // Transformar grupos para o formato esperado pela API
+      const formattedGroups = editGroups.map(group => {
+        const items: any[] = [];
+        
+        // Adicionar produtos como itens
+        if (group.productItems && group.productItems.length > 0) {
+          group.productItems.forEach((prod: any) => {
+            if (prod.productId && prod.variationId) {
+              const product = products.find(p => p.id === prod.productId);
+              const variation = product?.variations?.find((v: any) => v.id === prod.variationId);
+              
+              if (variation) {
+                items.push({
+                  quantity: prod.quantity || 1,
+                  unitPrice: variation.price,
+                  productId: prod.productId,
+                  productVariationId: prod.variationId,
+                });
+              }
+            }
+          });
+        }
+        
+        // Adicionar serviços como itens
+        if (group.serviceItems && group.serviceItems.length > 0) {
+          group.serviceItems.forEach((serv: any) => {
+            if (serv.serviceId && serv.variationId) {
+              const service = services.find(s => s.id === serv.serviceId);
+              const variation = service?.variations?.find((v: any) => v.id === serv.variationId);
+              
+              if (variation) {
+                items.push({
+                  quantity: serv.quantity || 1,
+                  unitPrice: variation.price,
+                  serviceId: serv.serviceId,
+                  serviceVariationId: serv.variationId,
+                });
+              }
+            }
+          });
+        }
+        
+        return {
+          name: group.name,
+          type: group.type || 'PRODUCT',
+          items,
+        };
+      });
+      
       await api.updateInvoice(selectedInvoice.id, {
-        groups: editGroups,
+        groups: formattedGroups,
       });
       setEditModalOpen(false);
       await loadData();
@@ -233,6 +352,11 @@ export const InvoicesPage: React.FC = () => {
 
   const columns = [
     {
+      key: 'code',
+      label: 'Código',
+      render: (value: string) => value || 'N/A',
+    },
+    {
       key: 'clientId',
       label: 'Cliente',
       render: (value: string) => clients.find((c) => c.id === value)?.name || 'N/A',
@@ -259,6 +383,235 @@ export const InvoicesPage: React.FC = () => {
     },
   ];
 
+  const renderListView = () => (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm text-left text-gray-700">
+        <thead className="bg-gray-50 border-b-2 border-gray-200">
+          <tr>
+            {columns.map((col) => (
+              <th key={col.key} className="px-6 py-4 font-semibold text-gray-800 text-sm uppercase tracking-wide">
+                {col.label}
+              </th>
+            ))}
+            <th className="px-6 py-4 font-semibold text-gray-800 text-sm uppercase tracking-wide">Ações</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100">
+          {invoices.map((invoice) => (
+            <tr key={invoice.id} className="hover:bg-gray-50 transition">
+              {columns.map((col) => (
+                <td key={col.key} className="px-6 py-4">
+                  {col.render
+                    ? (col.render as any)(invoice[col.key as keyof Invoice])
+                    : (invoice[col.key as keyof Invoice] as any)?.toString() || '-'}
+                </td>
+              ))}
+              <td className="px-6 py-4">
+                <div className="flex gap-1 flex-wrap">
+                  <button
+                    onClick={() => handleEdit(invoice)}
+                    className="px-2 py-1.5 bg-green-50 hover:bg-green-100 text-green-700 rounded-md text-xs font-medium transition"
+                    disabled={invoice.status === 'APPROVED'}
+                    title={invoice.status === 'APPROVED' ? 'Orçamento aprovado não pode ser editado' : 'Editar'}
+                  >
+                    ✏️ Editar
+                  </button>
+                  <button
+                    onClick={() => handleView(invoice)}
+                    className="px-2 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-md text-xs font-medium transition"
+                    title="Visualizar"
+                  >
+                    👁️ Ver
+                  </button>
+                  <button
+                    onClick={() => handleGeneratePublicUrl(invoice)}
+                    className="px-2 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-md text-xs font-medium transition"
+                    title="Gerar/Ver link público"
+                  >
+                    🔗 Link
+                  </button>
+                  <button
+                    onClick={() => handleExportPDF(invoice)}
+                    className="px-2 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded-md text-xs font-medium transition"
+                    title="Exportar PDF"
+                  >
+                    📄 PDF
+                  </button>
+                  <button
+                    onClick={() => handleSendEmail(invoice)}
+                    className="px-2 py-1.5 bg-cyan-50 hover:bg-cyan-100 text-cyan-700 rounded-md text-xs font-medium transition"
+                    title="Enviar por email"
+                    disabled={!invoice.publicUrl}
+                  >
+                    📧 Email
+                  </button>
+                  <button
+                    onClick={() => handleClone(invoice)}
+                    className="px-2 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md text-xs font-medium transition"
+                    title="Clonar"
+                  >
+                    📋 Clonar
+                  </button>
+                  <button
+                    onClick={() => handleDelete(invoice)}
+                    className="px-2 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-md text-xs font-medium transition"
+                    title="Deletar"
+                  >
+                    🗑️
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  const renderCardsView = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {invoices.map((invoice) => {
+        const client = clients.find((c) => c.id === invoice.clientId);
+        return (
+          <Card key={invoice.id} hover>
+            <div className="p-5 space-y-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">#{invoice.code || invoice.id.substring(0, 8)}</p>
+                  <h3 className="font-bold text-lg text-gray-900">{client?.name || 'N/A'}</h3>
+                </div>
+                <Badge variant={getStatusColor(invoice.status)}>
+                  {getStatusEmoji(invoice.status)}
+                </Badge>
+              </div>
+
+              <div className="flex justify-between items-center pt-3 border-t border-gray-100">
+                <span className="text-sm text-gray-600">Total</span>
+                <span className="text-xl font-bold text-green-600">
+                  R$ {(invoice.totalAmount || 0).toFixed(2)}
+                </span>
+              </div>
+
+              <div className="flex gap-1 flex-wrap pt-2">
+                <button
+                  onClick={() => handleEdit(invoice)}
+                  className="flex-1 px-2 py-1.5 bg-green-50 hover:bg-green-100 text-green-700 rounded text-xs font-medium transition"
+                  disabled={invoice.status === 'APPROVED'}
+                  title="Editar"
+                >
+                  ✏️
+                </button>
+                <button
+                  onClick={() => handleView(invoice)}
+                  className="flex-1 px-2 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded text-xs font-medium transition"
+                  title="Ver"
+                >
+                  👁️
+                </button>
+                <button
+                  onClick={() => handleGeneratePublicUrl(invoice)}
+                  className="flex-1 px-2 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded text-xs font-medium transition"
+                  title="Link"
+                >
+                  🔗
+                </button>
+                <button
+                  onClick={() => handleExportPDF(invoice)}
+                  className="flex-1 px-2 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded text-xs font-medium transition"
+                  title="PDF"
+                >
+                  📄
+                </button>
+                <button
+                  onClick={() => handleSendEmail(invoice)}
+                  className="flex-1 px-2 py-1.5 bg-cyan-50 hover:bg-cyan-100 text-cyan-700 rounded text-xs font-medium transition"
+                  title="Email"
+                  disabled={!invoice.publicUrl}
+                >
+                  📧
+                </button>
+                <button
+                  onClick={() => handleDelete(invoice)}
+                  className="flex-1 px-2 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded text-xs font-medium transition"
+                  title="Deletar"
+                >
+                  🗑️
+                </button>
+              </div>
+
+              <p className="text-xs text-gray-500 pt-2">
+                Criado em {new Date(invoice.createdAt).toLocaleDateString('pt-BR')}
+              </p>
+            </div>
+          </Card>
+        );
+      })}
+    </div>
+  );
+
+  const renderKanbanView = () => {
+    const statusGroups = {
+      DRAFT: invoices.filter(i => i.status === 'DRAFT'),
+      READY: invoices.filter(i => i.status === 'READY'),
+      APPROVED: invoices.filter(i => i.status === 'APPROVED'),
+      REFUSED: invoices.filter(i => i.status === 'REFUSED'),
+    };
+
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {Object.entries(statusGroups).map(([status, items]) => (
+          <div key={status} className="bg-gray-50 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-2xl">{getStatusEmoji(status)}</span>
+              <div>
+                <h3 className="font-bold text-gray-900">{getStatusLabel(status)}</h3>
+                <p className="text-xs text-gray-500">{items.length} orçamento(s)</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {items.map((invoice) => {
+                const client = clients.find((c) => c.id === invoice.clientId);
+                return (
+                  <Card key={invoice.id} hover>
+                    <div className="p-3 space-y-2">
+                      <p className="text-xs text-gray-500">#{invoice.code || invoice.id.substring(0, 8)}</p>
+                      <h4 className="font-semibold text-sm text-gray-900">{client?.name || 'N/A'}</h4>
+                      <p className="text-sm font-bold text-green-600">
+                        R$ {(invoice.totalAmount || 0).toFixed(2)}
+                      </p>
+                      <div className="flex gap-1 pt-2">
+                        <button
+                          onClick={() => handleEdit(invoice)}
+                          className="flex-1 px-2 py-1 bg-white hover:bg-gray-100 text-gray-700 rounded text-xs transition border border-gray-200"
+                          disabled={invoice.status === 'APPROVED'}
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={() => handleGeneratePublicUrl(invoice)}
+                          className="flex-1 px-2 py-1 bg-white hover:bg-gray-100 text-gray-700 rounded text-xs transition border border-gray-200"
+                        >
+                          🔗
+                        </button>
+                        <button
+                          onClick={() => handleExportPDF(invoice)}
+                          className="flex-1 px-2 py-1 bg-white hover:bg-gray-100 text-gray-700 rounded text-xs transition border border-gray-200"
+                        >
+                          📄
+                        </button>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -272,6 +625,47 @@ export const InvoicesPage: React.FC = () => {
             </Button>
           }
         />
+
+        {/* Controle de visualização */}
+        <Card>
+          <div className="p-4 flex justify-between items-center">
+            <div className="flex gap-2">
+              <button
+                onClick={() => setViewMode('list')}
+                className={`px-4 py-2 rounded-lg font-medium transition ${
+                  viewMode === 'list'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                📋 Lista
+              </button>
+              <button
+                onClick={() => setViewMode('cards')}
+                className={`px-4 py-2 rounded-lg font-medium transition ${
+                  viewMode === 'cards'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                🎴 Cards
+              </button>
+              <button
+                onClick={() => setViewMode('kanban')}
+                className={`px-4 py-2 rounded-lg font-medium transition ${
+                  viewMode === 'kanban'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                📊 Kanban
+              </button>
+            </div>
+            <p className="text-sm text-gray-600">
+              {invoices.length} orçamento(s)
+            </p>
+          </div>
+        </Card>
 
         <Card>
           {loading ? (
@@ -293,63 +687,11 @@ export const InvoicesPage: React.FC = () => {
               }
             />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left text-gray-700">
-                <thead className="bg-gray-50 border-b-2 border-gray-200">
-                  <tr>
-                    {columns.map((col) => (
-                      <th key={col.key} className="px-6 py-4 font-semibold text-gray-800 text-sm uppercase tracking-wide">
-                        {col.label}
-                      </th>
-                    ))}
-                    <th className="px-6 py-4 font-semibold text-gray-800 text-sm uppercase tracking-wide">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {invoices.map((invoice) => (
-                    <tr key={invoice.id} className="hover:bg-gray-50 transition">
-                      {columns.map((col) => (
-                        <td key={col.key} className="px-6 py-4">
-                          {col.render
-                            ? col.render(invoice[col.key as keyof Invoice], invoice)
-                            : (invoice[col.key as keyof Invoice] as any)?.toString() || '-'}
-                        </td>
-                      ))}
-                      <td className="px-6 py-4">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleEdit(invoice)}
-                            className="px-3 py-1.5 bg-green-50 hover:bg-green-100 text-green-700 rounded-md text-xs font-medium transition"
-                            disabled={invoice.status === 'APPROVED'}
-                            title={invoice.status === 'APPROVED' ? 'Orçamento aprovado não pode ser editado' : 'Editar orçamento'}
-                          >
-                            ✏️ Editar
-                          </button>
-                          <button
-                            onClick={() => handleView(invoice)}
-                            className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-md text-xs font-medium transition"
-                          >
-                            👁️ Ver
-                          </button>
-                          <button
-                            onClick={() => handleClone(invoice)}
-                            className="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-md text-xs font-medium transition"
-                          >
-                            📋 Clonar
-                          </button>
-                          <button
-                            onClick={() => handleDelete(invoice)}
-                            className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-md text-xs font-medium transition"
-                          >
-                            🗑️ Deletar
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <>
+              {viewMode === 'list' && renderListView()}
+              {viewMode === 'cards' && renderCardsView()}
+              {viewMode === 'kanban' && renderKanbanView()}
+            </>
           )}
         </Card>
       </div>
@@ -505,6 +847,18 @@ export const InvoicesPage: React.FC = () => {
                           onChange={(e) => handleGroupNameChange(groupIndex, e.target.value)}
                           className="flex-1 px-3 py-2 border-2 border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold"
                         />
+                        <select
+                          value={group.type || 'PRODUCT'}
+                          onChange={(e) => {
+                            const newGroups = [...editGroups];
+                            newGroups[groupIndex].type = e.target.value;
+                            setEditGroups(newGroups);
+                          }}
+                          className="px-3 py-2 border-2 border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold"
+                        >
+                          <option value="PRODUCT">Produto</option>
+                          <option value="SERVICE">Serviço</option>
+                        </select>
                         <button
                           onClick={() => handleRemoveGroup(groupIndex)}
                           className="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition"

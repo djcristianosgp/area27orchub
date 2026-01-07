@@ -7,5 +7,6 @@ export { BrandsPage } from './BrandsPage';
 export { GroupsPage } from './GroupsPage';
 export { InvoicesPage } from './InvoicesPage';
 export { InvoicesListPage } from './InvoicesListPage';
+export { InvoiceFormPage } from './InvoiceFormPage';
 export { CouponsPage } from './CouponsPage';
 export { CompanyPage } from './CompanyPage';

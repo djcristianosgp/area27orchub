@@ -44,7 +44,7 @@ model Client {
   nickname        String?         // Apelido/Nome Fantasia
   cpfCnpj         String?         @unique @map("cpf_cnpj")
   status          ClientStatus    @default(ACTIVE)
-  companyId       String?         @map("companyId")
+  companyId       String?         @map("company_id")
   
   // Localização
   street          String?         @map("street")
@@ -227,11 +227,28 @@ model Invoice {
   clientId            String          @map("clientId")
   status              InvoiceStatus   @default(DRAFT)
   totalAmount         Decimal         @db.Decimal(12, 2) @default(0)
+  
+  // Cabeçalho do Orçamento
+  proposalValidDate   DateTime?       @map("proposal_valid_date")    // Data de validade da proposta
+  origin              String?                                        // Origem do orçamento
+  observations        String?         @db.Text                       // Observações gerais
+  responsible         String?                                        // Responsável pelo orçamento
+  internalReference   String?         @map("internal_reference")     // Referência interna
+  
+  // Faturamento
+  discounts           Decimal         @db.Decimal(10, 2) @default(0) // Descontos
+  additions           Decimal         @db.Decimal(10, 2) @default(0) // Acréscimos
+  displacement        Decimal         @db.Decimal(10, 2) @default(0) // Deslocamento
+  finalAmount         Decimal         @db.Decimal(12, 2) @default(0) @map("final_amount") // Valor final calculado
+  
   // Página pública
   publicUrl           String?         @unique @map("publicUrl")
+  publicUrlActive     Boolean         @default(true) @map("public_url_active") // URL pública ativa
+  
   // Resposta do cliente
   clientResponseStatus String?        @map("responseStatus")
   clientResponseDate   DateTime?      @map("responseDate")
+  clientResponseReason String?        @db.Text @map("client_response_reason") // Justificativa do cliente
   
   createdAt           DateTime        @default(now()) @map("created_at")
   updatedAt           DateTime        @updatedAt @map("updated_at")
@@ -280,6 +297,11 @@ model InvoiceItem {
   quantity            Int        @default(1)
   unitPrice           Decimal    @db.Decimal(10, 2)
   totalPrice          Decimal    @db.Decimal(12, 2)
+  
+  // Customização exclusiva do orçamento
+  customName          String?    @map("custom_name")          // Nome customizado
+  customDescription   String?    @db.Text @map("custom_description") // Descrição customizada
+  customPrice         Decimal?   @db.Decimal(10, 2) @map("custom_price") // Preço customizado
   
   invoiceId           String     @map("invoiceId")
   invoiceGroupId      String     @map("invoiceGroupId")
