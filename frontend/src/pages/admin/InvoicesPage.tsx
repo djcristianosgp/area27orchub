@@ -1034,6 +1034,145 @@ export const InvoicesPage: React.FC = () => {
           </div>
         )}
       </Modal>
+
+      {/* Modal de URL Pública */}
+      <Modal
+        isOpen={publicUrlModalOpen}
+        title="🔗 Link Público do Orçamento"
+        onClose={() => setPublicUrlModalOpen(false)}
+      >
+        {selectedInvoice && (
+          <div className="space-y-4">
+            {selectedInvoice.publicUrl ? (
+              <>
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-sm text-green-800 mb-2 font-medium">✅ Link público ativo</p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={`${window.location.origin}/public/invoice/${selectedInvoice.publicUrl}`}
+                      className="flex-1 px-3 py-2 bg-white border border-green-300 rounded text-sm"
+                    />
+                    <button
+                      onClick={handleCopyPublicUrl}
+                      className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded font-medium transition"
+                    >
+                      📋 Copiar
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleTogglePublicUrl}
+                    className={`flex-1 px-4 py-2 rounded font-medium transition ${
+                      selectedInvoice.publicUrlActive
+                        ? 'bg-orange-100 hover:bg-orange-200 text-orange-700'
+                        : 'bg-green-100 hover:bg-green-200 text-green-700'
+                    }`}
+                  >
+                    {selectedInvoice.publicUrlActive ? '🔒 Desativar Link' : '🔓 Ativar Link'}
+                  </button>
+                  <a
+                    href={`/public/invoice/${selectedInvoice.publicUrl}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium text-center transition"
+                  >
+                    👁️ Visualizar
+                  </a>
+                </div>
+              </>
+            ) : (
+              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
+                <p className="text-yellow-800 mb-3">Este orçamento ainda não possui um link público.</p>
+                <button
+                  onClick={async () => {
+                    if (selectedInvoice) {
+                      await api.regenerateInvoicePublicUrl(selectedInvoice.id);
+                      await loadData();
+                      const updated = invoices.find(i => i.id === selectedInvoice.id);
+                      if (updated) setSelectedInvoice(updated);
+                    }
+                  }}
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded font-medium transition"
+                >
+                  🔗 Gerar Link Público
+                </button>
+              </div>
+            )}
+
+            <div className="pt-4 border-t border-gray-200">
+              <p className="text-xs text-gray-500">
+                💡 O link público permite que o cliente visualize e aprove/recuse o orçamento sem login.
+              </p>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Modal de Enviar Email */}
+      <Modal
+        isOpen={emailModalOpen}
+        title="📧 Enviar Orçamento por Email"
+        onClose={() => setEmailModalOpen(false)}
+        actions={[
+          { label: 'Cancelar', onClick: () => setEmailModalOpen(false), variant: 'secondary' },
+          {
+            label: 'Enviar Email',
+            onClick: handleSendEmailSubmit,
+            variant: 'primary',
+            loading: submitLoading,
+          },
+        ]}
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Para (Email do Cliente)
+            </label>
+            <input
+              type="email"
+              value={emailForm.to}
+              onChange={(e) => setEmailForm({ ...emailForm, to: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="cliente@example.com"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Assunto
+            </label>
+            <input
+              type="text"
+              value={emailForm.subject}
+              onChange={(e) => setEmailForm({ ...emailForm, subject: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Mensagem
+            </label>
+            <textarea
+              value={emailForm.message}
+              onChange={(e) => setEmailForm({ ...emailForm, message: e.target.value })}
+              rows={8}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+            <p className="flex items-start gap-2">
+              <span>💡</span>
+              <span>O email será enviado com o link público do orçamento anexado.</span>
+            </p>
+          </div>
+        </div>
+      </Modal>
     </AdminLayout>
   );
 };

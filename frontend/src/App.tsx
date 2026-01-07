@@ -28,7 +28,7 @@ export function App() {
         <Route path="/register" element={<LoginPage />} />
         <Route path="/coupons" element={<CouponsPublicPage />} />
         <Route path="/products" element={<ProductsPublicPage />} />
-        <Route path="/invoices/:publicUrl" element={<PublicInvoicePage />} />
+        <Route path="/public/invoice/:publicUrl" element={<PublicInvoicePage />} />
         <Route path="/" element={<Navigate to="/admin" replace />} />
 
         {/* Admin routes */}
