@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@store/authStore';
+import { Button, Input, Alert } from '@components/ui';
+import { Lock, Mail } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -14,101 +16,105 @@ export const LoginPage: React.FC = () => {
     setLocalError('');
     try {
       await login(email, password);
-      navigate('/dashboard');
+      navigate('/admin');
     } catch (err: any) {
       setLocalError(err.response?.data?.message || 'Erro ao fazer login');
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 p-4">
-      <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-10 w-full max-w-md">
-        {/* Logo/Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-4 shadow-lg">
-            <span className="text-3xl">🌐</span>
-          </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
-            Budget Hub
-          </h1>
-          <p className="text-gray-600 font-medium">Sistema de Orçamentos Virtuais</p>
-        </div>
-        
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {(error || localError) && (
-            <div className="bg-red-50 border-2 border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-start gap-2">
-              <span className="text-lg">⚠️</span>
-              <span className="flex-1 text-sm font-medium">{error || localError}</span>
-            </div>
-          )}
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-600 via-accent-600 to-primary-800 p-4">
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary-400/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent-400/20 rounded-full blur-3xl" />
+      </div>
 
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
-              📧 Email
-            </label>
-            <input
+      {/* Login Card */}
+      <div className="relative w-full max-w-md">
+        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-primary-600 to-primary-800 px-8 py-12">
+            <div className="flex items-center justify-center mb-4">
+              <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg">
+                <span className="text-3xl font-bold bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent">
+                  OH
+                </span>
+              </div>
+            </div>
+            <h1 className="text-3xl font-bold text-white text-center">OrçHub</h1>
+            <p className="text-primary-100 text-center mt-2 text-sm">
+              Orçamentos Virtuais & Marketplace
+            </p>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="p-8 space-y-6">
+            {(error || localError) && (
+              <Alert
+                variant="danger"
+                title="Erro no Login"
+                message={error || localError}
+                closable={true}
+                onClose={() => {
+                  setLocalError('');
+                }}
+              />
+            )}
+
+            <Input
               type="email"
+              label="Email"
+              icon={<Mail className="h-5 w-5" />}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="seu@email.com"
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
               required
               disabled={isLoading}
             />
-          </div>
 
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
-              🔒 Senha
-            </label>
-            <input
+            <Input
               type="password"
+              label="Senha"
+              icon={<Lock className="h-5 w-5" />}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
               required
               disabled={isLoading}
             />
-          </div>
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-3 px-4 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-          >
-            {isLoading ? (
-              <span className="flex items-center justify-center gap-2">
-                <span className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></span>
-                <span>Entrando...</span>
-              </span>
-            ) : (
-              <span className="flex items-center justify-center gap-2">
-                <span>🚀</span>
-                <span>Entrar</span>
-              </span>
-            )}
-          </button>
+            <Button
+              type="submit"
+              size="lg"
+              variant="primary"
+              className="w-full"
+              isLoading={isLoading}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Entrando...' : 'Entrar'}
+            </Button>
 
-          <div className="text-center pt-4 border-t border-gray-200">
-            <p className="text-gray-600 text-sm">
-              Não tem conta?{' '}
-              <button
-                type="button"
-                onClick={() => navigate('/register')}
-                className="text-blue-600 hover:text-blue-700 font-bold underline decoration-2 decoration-blue-600/30 hover:decoration-blue-600"
-              >
-                Criar conta agora
-              </button>
+            <div className="border-t border-secondary-200 pt-6">
+              <p className="text-center text-secondary-600 text-sm">
+                Não tem conta?{' '}
+                <button
+                  type="button"
+                  onClick={() => navigate('/register')}
+                  className="text-primary-600 hover:text-primary-700 font-semibold transition-colors"
+                >
+                  Criar conta agora
+                </button>
+              </p>
+            </div>
+          </form>
+
+          {/* Footer */}
+          <div className="bg-secondary-50 px-8 py-4 border-t border-secondary-200 text-center">
+            <p className="text-xs text-secondary-500">
+              Ao fazer login, você concorda com nossos termos de uso
             </p>
           </div>
-        </form>
-
-        {/* Info */}
-        <div className="mt-8 pt-6 border-t border-gray-200">
-          <p className="text-xs text-gray-500 text-center">
-            Ao fazer login, você concorda com nossos termos de uso
-          </p>
         </div>
       </div>
     </div>
