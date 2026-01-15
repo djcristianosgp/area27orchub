@@ -1,4 +1,4 @@
 export { LoginPage } from './LoginPage';
-export { CouponsPublicPage } from './CouponsPublicPage';
-export { PublicInvoicePage } from './PublicInvoicePage';
-export * from './admin';
+export { CouponsPublicPageNew as CouponsPublicPage } from './CouponsPublicPageNew';
+export { PublicInvoicePageNew as PublicInvoicePage } from './PublicInvoicePageNew';
+export { ProductsPublicPageNew as ProductsPublicPage } from './ProductsPublicPageNew';

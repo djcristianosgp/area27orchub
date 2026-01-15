@@ -336,3 +336,4 @@
   button, a {
     @apply print:no-underline;
   }
+}

@@ -309,7 +309,7 @@ export const ProductsPageNew: React.FC = () => {
                   {/* Header */}
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      <h3 className="text-lg font-semibold text-gray-900">
                         {product.name}
                       </h3>
                       {product.description && (

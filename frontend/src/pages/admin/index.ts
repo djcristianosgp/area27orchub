@@ -1,23 +1,13 @@
-// Old pages (to be removed after testing)
+// Refactored pages (new design system)
 export { DashboardPage } from './DashboardPage';
-export { ClientsPage } from './ClientsPage';
-export { ProductsPage } from './ProductsPage';
-export { ServicesPage } from './ServicesPage';
-export { CategoriesPage } from './CategoriesPage';
-export { BrandsPage } from './BrandsPage';
-export { GroupsPage } from './GroupsPage';
-export { InvoicesPage } from './InvoicesPage';
-export { InvoicesListPage } from './InvoicesListPage';
+export { ClientsPageNew as ClientsPage } from './ClientsPageNew';
+export { InvoicesPageNew as InvoicesPage } from './InvoicesPageNew';
+export { ProductsPageNew as ProductsPage } from './ProductsPageNew';
+export { ServicesPageNew as ServicesPage } from './ServicesPageNew';
+export { CouponsPageNew as CouponsPage } from './CouponsPageNew';
+export { CategoriesPageNew as CategoriesPage } from './CategoriesPageNew';
+export { BrandsPageNew as BrandsPage } from './BrandsPageNew';
+export { GroupsPageNew as GroupsPage } from './GroupsPageNew';
 export { InvoiceFormPage } from './InvoiceFormPage';
-export { CouponsPage } from './CouponsPage';
 export { CompanyPage } from './CompanyPage';
 
-// New refactored pages
-export { ClientsPageNew } from './ClientsPageNew';
-export { InvoicesPageNew } from './InvoicesPageNew';
-export { ProductsPageNew } from './ProductsPageNew';
-export { ServicesPageNew } from './ServicesPageNew';
-export { CouponsPageNew } from './CouponsPageNew';
-export { CategoriesPageNew } from './CategoriesPageNew';
-export { BrandsPageNew } from './BrandsPageNew';
-export { GroupsPageNew } from './GroupsPageNew';

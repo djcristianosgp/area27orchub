@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from '@services/api';
-import { AdminLayout } from '@components/AdminLayout';
+import { AdminLayout } from '@components/layout';
 
 interface CompanyEmail { email: string; primary?: boolean }
 interface CompanyPhone { phone: string; hasWhatsapp?: boolean; primary?: boolean }

@@ -160,7 +160,7 @@ export const CategoriesPageNew: React.FC = () => {
                   render: (category: Category) => (
                     <div className="flex items-center gap-2">
                       <FolderOpen className="w-4 h-4 text-gray-400" />
-                      <span className="font-medium text-gray-900 dark:text-white">
+                      <span className="font-medium text-gray-900 dark:text-black">
                         {category.name}
                       </span>
                     </div>

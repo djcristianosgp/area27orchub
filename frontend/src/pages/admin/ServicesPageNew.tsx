@@ -275,7 +275,7 @@ export const ServicesPageNew: React.FC = () => {
                 <div className="space-y-4">
                   {/* Header */}
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    <h3 className="text-lg font-semibold text-gray-900 ">
                       {service.name}
                     </h3>
                     {service.description && (

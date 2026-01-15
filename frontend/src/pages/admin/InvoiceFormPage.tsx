@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { AdminLayout, Button, FormField, SelectField, Card, PageHeader, Modal } from '@components/index';
+import { AdminLayout } from '@components/layout';
+import { Button, Card, Modal } from '@components/ui';
+import { PageHeader } from '@components/common';
+import { FormField, SelectField } from '@components';
 import api from '@services/api';
 import type { Invoice, Client, Product, Service } from '../../types/index';
 import type { ProductVariation } from '../../types/index';
