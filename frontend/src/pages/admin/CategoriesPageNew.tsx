@@ -3,7 +3,7 @@ import { AdminLayout } from '@components/layout';
 import { Button, Card, Input, Modal, Table } from '@components/ui';
 import { PageHeader, SearchBar, EmptyState, Loading } from '@components/common';
 import api from '@services/api';
-import { Plus, Edit2, Trash2, FolderOpen } from 'lucide-react';
+import { Plus, Edit2, Trash2, Bookmark } from 'lucide-react';
 import type { Category } from '@types/index';
 
 export const CategoriesPageNew: React.FC = () => {
@@ -148,7 +148,7 @@ export const CategoriesPageNew: React.FC = () => {
                 ? 'Tente ajustar sua busca'
                 : 'Clique em "Nova Categoria" para começar'
             }
-            icon={FolderOpen}
+            icon={Bookmark}
           />
         ) : (
           <Card>
@@ -156,10 +156,10 @@ export const CategoriesPageNew: React.FC = () => {
               columns={[
                 {
                   key: 'name',
-                  title: 'Nome',
-                  render: (category: Category) => (
+                  label: 'Nome',
+                  render: (_value, category: Category) => (
                     <div className="flex items-center gap-2">
-                      <FolderOpen className="w-4 h-4 text-gray-400" />
+                      <Bookmark className="w-4 h-4 text-gray-400" />
                       <span className="font-medium text-gray-900 dark:text-black">
                         {category.name}
                       </span>
@@ -168,29 +168,39 @@ export const CategoriesPageNew: React.FC = () => {
                 },
                 {
                   key: 'createdAt',
-                  title: 'Criada em',
-                  render: (category: Category) =>
-                    new Date(category.createdAt).toLocaleDateString('pt-BR'),
+                  label: 'Criada em',
+                  render: (_value, category: Category) => {
+                    if (!category.createdAt) return '-';
+                    const date = new Date(category.createdAt);
+                    return isNaN(date.getTime()) ? '-' : date.toLocaleDateString('pt-BR');
+                  },
                 },
                 {
-                  key: 'actions',
-                  title: 'Ações',
-                  align: 'right' as const,
-                  render: (category: Category) => (
-                    <div className="flex justify-end gap-2">
+                  key: 'id' as any,
+                  label: 'Ações',
+                  align: 'left' as const,
+                  render: (_value: any, category: Category) => (
+                    <div className="flex justify-start gap-2">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleEdit(category)}
                         icon={Edit2}
-                      />
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        title="Editar categoria"
+                      >
+                        Editar
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDelete(category)}
                         icon={Trash2}
-                        className="text-red-600 hover:text-red-700"
-                      />
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        title="Excluir categoria"
+                      >
+                        Excluir
+                      </Button>
                     </div>
                   ),
                 },

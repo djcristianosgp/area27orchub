@@ -3,7 +3,7 @@ import { AdminLayout } from '@components/layout';
 import { Button, Card, Input, Modal, Table } from '@components/ui';
 import { PageHeader, SearchBar, EmptyState, Loading } from '@components/common';
 import api from '@services/api';
-import { Plus, Edit2, Trash2, Award } from 'lucide-react';
+import { Plus, Edit2, Trash2, Layers } from 'lucide-react';
 import type { Brand } from '@types/index';
 
 export const BrandsPageNew: React.FC = () => {
@@ -145,7 +145,7 @@ export const BrandsPageNew: React.FC = () => {
                 ? 'Tente ajustar sua busca'
                 : 'Clique em "Nova Marca" para começar'
             }
-            icon={Award}
+            icon={Layers}
           />
         ) : (
           <Card>
@@ -153,11 +153,11 @@ export const BrandsPageNew: React.FC = () => {
               columns={[
                 {
                   key: 'name',
-                  title: 'Nome',
-                  render: (brand: Brand) => (
+                  label: 'Nome',
+                  render: (_value, brand: Brand) => (
                     <div className="flex items-center gap-2">
-                      <Award className="w-4 h-4 text-gray-400" />
-                      <span className="font-medium text-gray-900 dark:text-white">
+                      <Layers className="w-4 h-4 text-gray-400" />
+                      <span className="font-medium text-gray-900 dark:text-black">
                         {brand.name}
                       </span>
                     </div>
@@ -165,29 +165,39 @@ export const BrandsPageNew: React.FC = () => {
                 },
                 {
                   key: 'createdAt',
-                  title: 'Criada em',
-                  render: (brand: Brand) =>
-                    new Date(brand.createdAt).toLocaleDateString('pt-BR'),
+                  label: 'Criada em',
+                  render: (_value, brand: Brand) => {
+                    if (!brand.createdAt) return '-';
+                    const date = new Date(brand.createdAt);
+                    return isNaN(date.getTime()) ? '-' : date.toLocaleDateString('pt-BR');
+                  },
                 },
                 {
-                  key: 'actions',
-                  title: 'Ações',
-                  align: 'right' as const,
-                  render: (brand: Brand) => (
-                    <div className="flex justify-end gap-2">
+                  key: 'id' as any,
+                  label: 'Ações',
+                  align: 'left' as const,
+                  render: (_value: any, brand: Brand) => (
+                    <div className="flex justify-start gap-2">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleEdit(brand)}
                         icon={Edit2}
-                      />
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        title="Editar marca"
+                      >
+                        Editar
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDelete(brand)}
                         icon={Trash2}
-                        className="text-red-600 hover:text-red-700"
-                      />
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        title="Excluir marca"
+                      >
+                        Excluir
+                      </Button>
                     </div>
                   ),
                 },

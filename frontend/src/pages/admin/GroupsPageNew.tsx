@@ -3,7 +3,7 @@ import { AdminLayout } from '@components/layout';
 import { Button, Card, Input, Modal, Table } from '@components/ui';
 import { PageHeader, SearchBar, EmptyState, Loading } from '@components/common';
 import api from '@services/api';
-import { Plus, Edit2, Trash2, Layers } from 'lucide-react';
+import { Plus, Edit2, Trash2, FolderOpen } from 'lucide-react';
 import type { Group } from '@types/index';
 
 export const GroupsPageNew: React.FC = () => {
@@ -145,7 +145,7 @@ export const GroupsPageNew: React.FC = () => {
                 ? 'Tente ajustar sua busca'
                 : 'Clique em "Novo Grupo" para começar'
             }
-            icon={Layers}
+            icon={FolderOpen}
           />
         ) : (
           <Card>
@@ -153,11 +153,11 @@ export const GroupsPageNew: React.FC = () => {
               columns={[
                 {
                   key: 'name',
-                  title: 'Nome',
-                  render: (group: Group) => (
+                  label: 'Nome',
+                  render: (_value, group: Group) => (
                     <div className="flex items-center gap-2">
-                      <Layers className="w-4 h-4 text-gray-400" />
-                      <span className="font-medium text-gray-900 dark:text-white">
+                      <FolderOpen className="w-4 h-4 text-gray-400" />
+                      <span className="font-medium text-gray-900 dark:text-black">
                         {group.name}
                       </span>
                     </div>
@@ -165,29 +165,39 @@ export const GroupsPageNew: React.FC = () => {
                 },
                 {
                   key: 'createdAt',
-                  title: 'Criado em',
-                  render: (group: Group) =>
-                    new Date(group.createdAt).toLocaleDateString('pt-BR'),
+                  label: 'Criado em',
+                  render: (_value, group: Group) => {
+                    if (!group.createdAt) return '-';
+                    const date = new Date(group.createdAt);
+                    return isNaN(date.getTime()) ? '-' : date.toLocaleDateString('pt-BR');
+                  },
                 },
                 {
-                  key: 'actions',
-                  title: 'Ações',
-                  align: 'right' as const,
-                  render: (group: Group) => (
-                    <div className="flex justify-end gap-2">
+                  key: 'id' as any,
+                  label: 'Ações',
+                  align: 'left' as const,
+                  render: (_value: any, group: Group) => (
+                    <div className="flex justify-start gap-2">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleEdit(group)}
                         icon={Edit2}
-                      />
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        title="Editar grupo"
+                      >
+                        Editar
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDelete(group)}
                         icon={Trash2}
-                        className="text-red-600 hover:text-red-700"
-                      />
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        title="Excluir grupo"
+                      >
+                        Excluir
+                      </Button>
                     </div>
                   ),
                 },

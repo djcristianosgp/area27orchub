@@ -8,10 +8,9 @@ import {
   Wrench,
   Tag,
   ShoppingCart,
-  Settings,
   Layers,
   Bookmark,
-  ChevronLeft,
+  FolderOpen,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -78,7 +77,7 @@ const configurationItems = [
   {
     label: 'Grupos',
     href: '/admin/groups',
-    icon: Settings,
+    icon: FolderOpen,
   },
 ];
 
