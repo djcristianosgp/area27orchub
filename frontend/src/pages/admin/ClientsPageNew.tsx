@@ -6,7 +6,7 @@ import api from '@services/api';
 import { Plus, Edit2, Trash2, Mail, Phone } from 'lucide-react';
 import type { Client } from '@types/index';
 
-export const ClientsPage: React.FC = () => {
+export const ClientsPageNew: React.FC = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [filteredClients, setFilteredClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(false);

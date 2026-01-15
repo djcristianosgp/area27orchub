@@ -242,7 +242,7 @@ export const InvoicesListPageNew: React.FC = () => {
             <Button
               variant="outline"
               onClick={() => setShowFilters(!showFilters)}
-              icon={<Filter className="h-4 w-4" />}
+              icon={Filter}
             >
               Filtros
             </Button>
@@ -250,14 +250,14 @@ export const InvoicesListPageNew: React.FC = () => {
             <Button
               variant="outline"
               onClick={handleExportFiltered}
-              icon={<Download className="h-4 w-4" />}
+              icon={Download}
             >
               Exportar
             </Button>
 
             <Button
               onClick={handleNew}
-              icon={<Plus className="h-4 w-4" />}
+              icon={Plus}
             >
               Novo Orçamento
             </Button>
@@ -336,7 +336,7 @@ export const InvoicesListPageNew: React.FC = () => {
             title="Nenhum orçamento encontrado"
             description="Comece criando um novo orçamento"
             action={
-              <Button onClick={handleNew} icon={<Plus className="h-4 w-4" />}>
+              <Button onClick={handleNew} icon={Plus}>
                 Novo Orçamento
               </Button>
             }

@@ -7,7 +7,7 @@ import api from '@services/api';
 import { ShoppingCart, Tag, LogIn } from 'lucide-react';
 import type { Product } from '@types/index';
 
-export const ProductsPublicPage: React.FC = () => {
+export const ProductsPublicPageNew: React.FC = () => {
   const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);

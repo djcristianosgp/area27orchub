@@ -1,23 +1,23 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { LoginPage } from '@pages/LoginPage';
-import { CouponsPublicPage } from '@pages/CouponsPublicPage';
-import { PublicInvoicePage } from '@pages/PublicInvoicePage';
-import { ProductsPublicPage } from '@pages/ProductsPublicPage';
+import { CouponsPublicPageNew as CouponsPublicPage } from '@pages/CouponsPublicPageNew';
+import { PublicInvoicePageNew as PublicInvoicePage } from '@pages/PublicInvoicePageNew';
+import { ProductsPublicPageNew as ProductsPublicPage } from '@pages/ProductsPublicPageNew';
 import { ProtectedRoute } from '@components/ProtectedRoute';
 import {
   DashboardPage,
-  ClientsPage,
-  ProductsPage,
-  ServicesPage,
-  InvoicesPage,
   InvoiceFormPage,
-  CouponsPage,
-  CategoriesPage,
-  BrandsPage,
-  GroupsPage,
   CompanyPage,
 } from '@pages/admin';
+import { ClientsPageNew as ClientsPage } from '@pages/admin/ClientsPageNew';
+import { InvoicesPageNew as InvoicesPage } from '@pages/admin/InvoicesPageNew';
+import { ProductsPageNew as ProductsPage } from '@pages/admin/ProductsPageNew';
+import { ServicesPageNew as ServicesPage } from '@pages/admin/ServicesPageNew';
+import { CouponsPageNew as CouponsPage } from '@pages/admin/CouponsPageNew';
+import { CategoriesPageNew as CategoriesPage } from '@pages/admin/CategoriesPageNew';
+import { BrandsPageNew as BrandsPage } from '@pages/admin/BrandsPageNew';
+import { GroupsPageNew as GroupsPage } from '@pages/admin/GroupsPageNew';
 
 export function App() {
   return (

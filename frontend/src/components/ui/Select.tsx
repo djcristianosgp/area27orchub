@@ -1,14 +1,22 @@
 import React from 'react';
 
+interface SelectOption {
+  value: string | number;
+  label: string;
+}
+
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
   error?: string;
   helperText?: string;
-  options: Array<{ value: string | number; label: string }>;
+  options?: SelectOption[];
+  children?: React.ReactNode;
 }
 
 export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
-  ({ label, error, helperText, options, className = '', ...props }, ref) => {
+  ({ label, error, helperText, options = [], children, className = '', ...props }, ref) => {
+    const hasOptions = options.length > 0;
+
     return (
       <div className="w-full">
         {label && (
@@ -22,11 +30,13 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           className={`input-base ${error ? 'border-danger-500 focus:ring-danger-100' : ''} ${className}`}
           {...props}
         >
-          {options.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
+          {hasOptions
+            ? options.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))
+            : children}
         </select>
         {error && <p className="mt-1 text-xs text-danger-600">{error}</p>}
         {helperText && !error && (

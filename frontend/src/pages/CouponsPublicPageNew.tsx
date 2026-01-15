@@ -7,7 +7,7 @@ import api from '@services/api';
 import { ShoppingCart, Tag } from 'lucide-react';
 import type { Coupon } from '@types/index';
 
-export const CouponsPublicPage: React.FC = () => {
+export const CouponsPublicPageNew: React.FC = () => {
   const navigate = useNavigate();
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [filteredCoupons, setFilteredCoupons] = useState<Coupon[]>([]);

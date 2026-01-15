@@ -1,6 +1,6 @@
 # ✅ CHECKLIST DE IMPLEMENTAÇÃO - REFATORAÇÃO VISUAL
 
-## 🎯 Status Geral: 80% Completo
+## 🎯 Status Geral: 95% Completo
 
 ---
 
@@ -59,7 +59,7 @@
 
 ---
 
-## FASE 3: Páginas Refatoradas ✅ 80% COMPLETO
+## FASE 3: Páginas Refatoradas ✅ 95% COMPLETO
 
 ### Autenticação
 - [x] LoginPage.tsx - Refatorada
@@ -69,18 +69,19 @@
 - [x] DashboardPage.tsx - Refatorada
 - [x] AdminLayout - Integrado
 
-### Admin - CRUD (4/6)
+### Admin - CRUD (6/6) ✅
 - [x] ClientsPageNew.tsx - Nova versão
 - [ ] ClientsPage.tsx - Remover antiga
 - [x] InvoicesPageNew.tsx - Nova versão
 - [ ] InvoicesPage.tsx - Remover antiga
-- [ ] ProductsPage.tsx - PENDENTE
-- [ ] ServicesPage.tsx - PENDENTE
+- [x] ProductsPageNew.tsx - ✅ COMPLETO
+- [x] ServicesPageNew.tsx - ✅ COMPLETO
+- [x] CouponsPageNew.tsx - ✅ COMPLETO (admin)
 
-### Admin - Config (0/3)
-- [ ] CategoriesPage.tsx
-- [ ] BrandsPage.tsx
-- [ ] GroupsPage.tsx
+### Admin - Config (3/3) ✅
+- [x] CategoriesPageNew.tsx - ✅ COMPLETO
+- [x] BrandsPageNew.tsx - ✅ COMPLETO
+- [x] GroupsPageNew.tsx - ✅ COMPLETO
 
 ### Público
 - [x] CouponsPublicPageNew.tsx - Nova versão
@@ -92,50 +93,46 @@
 
 ## 📋 PRÓXIMAS AÇÕES
 
-### 1. Atualizar App.tsx ⚠️ CRÍTICO
+### 1. Atualizar App.tsx ✅ COMPLETO
 ```typescript
-// REMOVER
-import { ClientsPage } from '@pages/admin/ClientsPage';
-import { InvoicesPage } from '@pages/admin/InvoicesPage';
-import { CouponsPublicPage } from '@pages/CouponsPublicPage';
-import { ProductsPublicPage } from '@pages/ProductsPublicPage';
-import { PublicInvoicePage } from '@pages/PublicInvoicePage';
-
-// ADICIONAR
-import { ClientsPageNew as ClientsPage } from '@pages/admin/ClientsPageNew';
-import { InvoicesPageNew as InvoicesPage } from '@pages/admin/InvoicesPageNew';
-import { CouponsPublicPageNew as CouponsPublicPage } from '@pages/CouponsPublicPageNew';
-import { ProductsPublicPageNew as ProductsPublicPage } from '@pages/ProductsPublicPageNew';
-import { PublicInvoicePageNew as PublicInvoicePage } from '@pages/PublicInvoicePageNew';
+// REMOVIDO E ATUALIZADO
+✅ import { ClientsPageNew as ClientsPage } from '@pages/admin/ClientsPageNew';
+✅ import { InvoicesPageNew as InvoicesPage } from '@pages/admin/InvoicesPageNew';
+✅ import { CouponsPublicPageNew as CouponsPublicPage } from '@pages/CouponsPublicPageNew';
+✅ import { ProductsPublicPageNew as ProductsPublicPage } from '@pages/ProductsPublicPageNew';
+✅ import { PublicInvoicePageNew as PublicInvoicePage } from '@pages/PublicInvoicePageNew';
 ```
 
-### 2. Criar Páginas Restantes 🔄 EM ANDAMENTO
-- [ ] ProductsPage.tsx (admin)
+### 2. Criar Páginas Restantes ✅ COMPLETO
+- [x] ProductsPageNew.tsx (admin) ✅
   - Grid/Cards de produtos
   - Modal de criação/edição
   - Variações
   
-- [ ] ServicesPage.tsx (admin)
-  - Tabela de serviços
+- [x] ServicesPageNew.tsx (admin) ✅
+  - Tabela/Cards de serviços
   - Modal de criação/edição
   - Variações
 
-- [ ] CouponsPage.tsx (admin)
-  - Tabela de cupons
+- [x] CouponsPageNew.tsx (admin) ✅
+  - Lista de cupons
   - Modal de criação/edição
   - Status ativo/inativo
 
-- [ ] CategoriesPage.tsx
+- [x] CategoriesPageNew.tsx ✅
   - Tabela simples
   - Modal de criação/edição
   
-- [ ] BrandsPage.tsx
+- [x] BrandsPageNew.tsx ✅
   - Tabela simples
   - Modal de criação/edição
   
-- [ ] GroupsPage.tsx
+- [x] GroupsPageNew.tsx ✅
   - Tabela simples
   - Modal de criação/edição
+
+- [x] App.tsx atualizado com todas as novas páginas ✅
+- [x] index.ts atualizado com exports das novas páginas ✅
 
 ### 3. Refatoração de InvoiceFormPage 📝 PENDENTE
 - [ ] Criar FormLayout component

@@ -10,7 +10,7 @@ import type { Invoice } from '@types/index';
 
 type ViewMode = 'list' | 'cards' | 'kanban';
 
-export const InvoicesPage: React.FC = () => {
+export const InvoicesPageNew: React.FC = () => {
   const navigate = useNavigate();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [filteredInvoices, setFilteredInvoices] = useState<Invoice[]>([]);

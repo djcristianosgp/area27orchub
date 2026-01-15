@@ -1,10 +1,12 @@
 import React from 'react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'success' | 'warning';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'success' | 'warning' | 'outline';
   size?: 'xs' | 'sm' | 'md' | 'lg';
   isLoading?: boolean;
+  loading?: boolean; // alias to keep backwards compatibility
   children: React.ReactNode;
+  icon?: React.ElementType | React.ReactNode;
 }
 
 const sizeClasses = {
@@ -21,6 +23,7 @@ const variantClasses = {
   danger: 'btn-danger',
   success: 'btn-success',
   warning: 'btn-warning',
+  outline: 'btn-secondary', // alias para secondary
 };
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -29,22 +32,40 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       variant = 'primary',
       size = 'md',
       isLoading = false,
+      loading,
       disabled,
       children,
+      icon,
       className = '',
       ...props
     },
     ref
   ) => {
+    const loadingState = isLoading || loading;
+    const hasIconComponent = icon && typeof icon === 'function';
+    const contentClass = (hasIconComponent || loadingState) ? 'flex items-center gap-2' : '';
+    
+    // Renderizar ícone se for um componente React
+    const renderedIcon = React.isValidElement(icon)
+      ? React.cloneElement(icon, {
+          className: `${icon.props?.className ?? ''} w-4 h-4`.trim(),
+        })
+      : hasIconComponent
+        ? React.createElement(icon as React.ComponentType<{ className?: string }>, {
+            className: 'w-4 h-4',
+            strokeWidth: 2,
+          })
+        : null;
+    
     return (
       <button
         ref={ref}
-        disabled={disabled || isLoading}
-        className={`${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+        disabled={disabled || loadingState}
+        className={`${variantClasses[variant]} ${sizeClasses[size]} ${contentClass} ${className}`}
         {...props}
       >
-        {isLoading ? (
-          <span className="flex items-center gap-2">
+        {loadingState ? (
+          <>
             <svg
               className="animate-spin h-4 w-4"
               xmlns="http://www.w3.org/2000/svg"
@@ -66,9 +87,12 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
               />
             </svg>
             {children}
-          </span>
+          </>
         ) : (
-          children
+          <>
+            {renderedIcon}
+            {children}
+          </>
         )}
       </button>
     );

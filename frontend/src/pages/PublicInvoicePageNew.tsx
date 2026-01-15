@@ -5,7 +5,7 @@ import { Loading } from '@components/common';
 import api from '@services/api';
 import { Download, Check, X, Package } from 'lucide-react';
 
-export const PublicInvoicePage: React.FC = () => {
+export const PublicInvoicePageNew: React.FC = () => {
   const { publicUrl } = useParams<{ publicUrl: string }>();
   const [invoice, setInvoice] = useState<any>(null);
   const [loading, setLoading] = useState(true);
