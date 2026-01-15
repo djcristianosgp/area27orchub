@@ -22,3 +22,9 @@ export type { ViewMode } from './ViewModeSelector';
 export { Tabs, TabPanel } from './Tabs';
 export type { Tab } from './Tabs';
 export { MultiSelect } from './MultiSelect';
+
+// Componentes de Forms
+export { FormLayout, FormSection } from './forms';
+export { FormField as AdvancedFormField } from './forms';
+export { MultiSelect as AdvancedMultiSelect } from './forms';
+export { GroupEditor } from './forms';
