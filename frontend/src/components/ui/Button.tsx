@@ -5,7 +5,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   size?: 'xs' | 'sm' | 'md' | 'lg';
   isLoading?: boolean;
   loading?: boolean; // alias to keep backwards compatibility
-  children: React.ReactNode;
+  children?: React.ReactNode;
   icon?: React.ElementType | React.ReactNode;
 }
 
@@ -44,19 +44,18 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const loadingState = isLoading || loading;
     const hasIconComponent = icon && typeof icon === 'function';
     const contentClass = (hasIconComponent || loadingState) ? 'flex items-center gap-2' : '';
-    
+
     // Renderizar ícone se for um componente React
     const renderedIcon = React.isValidElement(icon)
       ? React.cloneElement(icon, {
           className: `${icon.props?.className ?? ''} w-4 h-4`.trim(),
         })
       : hasIconComponent
-        ? React.createElement(icon as React.ComponentType<{ className?: string }>, {
+        ? React.createElement(icon as React.ComponentType<any>, {
             className: 'w-4 h-4',
-            strokeWidth: 2,
           })
         : null;
-    
+
     return (
       <button
         ref={ref}
